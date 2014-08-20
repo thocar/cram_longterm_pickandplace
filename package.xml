@@ -1,0 +1,84 @@
+<?xml version="1.0"?>
+<package>
+  <name>cram_longterm_pickandplace</name>
+  <version>0.0.0</version>
+  <description>The cram_longterm_pickandplace package</description>
+
+  <maintainer email="winkler@cs.uni-bremen.de">Jan Winkler</maintainer>
+
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>cram_memoryaware</build_depend>
+  <build_depend>cl_control_primitives</build_depend>
+  <build_depend>cram_language</build_depend>
+  <build_depend>cram_reasoning</build_depend>
+  <build_depend>cram_designators</build_depend>
+  <build_depend>roslisp</build_depend>
+  <build_depend>roslisp_utilities</build_depend>
+  <build_depend>cram_roslisp_common</build_depend>
+  <build_depend>designators_ros</build_depend>
+  <build_depend>alexandria</build_depend>
+  <build_depend>cram_plan_library</build_depend>
+  <build_depend>cram_plan_knowledge</build_depend>
+  <build_depend>point_head_process_module</build_depend>
+  <build_depend>cram_environment_representation</build_depend>
+  <build_depend>location_costmap</build_depend>
+  <build_depend>occupancy_grid_costmap</build_depend>
+  <build_depend>object_location_designators</build_depend>
+  <build_depend>bullet_reasoning</build_depend>
+  <build_depend>bullet_reasoning_designators</build_depend>
+  <build_depend>cram_physics_utils</build_depend>
+  <build_depend>semantic_map_costmap</build_depend>
+  <build_depend>nav_pcontroller</build_depend>
+  <build_depend>pr2_description_lowres</build_depend>
+  <build_depend>robosherlock_process_module</build_depend>
+  <build_depend>cram_beliefstate</build_depend>
+  <build_depend>cram_pr2_knowledge</build_depend>
+  <build_depend>pr2_manipulation_process_module</build_depend>
+  <build_depend>pr2_manipulation_knowledge</build_depend>
+  <build_depend>pr2_navigation_process_module</build_depend>
+  <build_depend>pr2_reachability_costmap</build_depend>
+  <build_depend>designator_integration_msgs</build_depend>
+  <build_depend>continuous_interaction</build_depend>
+  <!--build_depend>spatial_relations_costmap</build_depend-->
+
+  <run_depend>cram_language</run_depend>
+  <run_depend>cram_memoryaware</run_depend>
+  <run_depend>cl_control_primitives</run_depend>
+  <run_depend>cram_reasoning</run_depend>
+  <run_depend>cram_designators</run_depend>
+  <run_depend>roslisp</run_depend>
+  <run_depend>roslisp_utilities</run_depend>
+  <run_depend>cram_roslisp_common</run_depend>
+  <run_depend>designators_ros</run_depend>
+  <run_depend>alexandria</run_depend>
+  <run_depend>cram_plan_library</run_depend>
+  <run_depend>cram_plan_knowledge</run_depend>
+  <run_depend>point_head_process_module</run_depend>
+  <run_depend>cram_environment_representation</run_depend>
+  <run_depend>location_costmap</run_depend>
+  <run_depend>occupancy_grid_costmap</run_depend>
+  <run_depend>object_location_designators</run_depend>
+  <run_depend>bullet_reasoning</run_depend>
+  <run_depend>bullet_reasoning_designators</run_depend>
+  <run_depend>cram_physics_utils</run_depend>
+  <run_depend>semantic_map_costmap</run_depend>
+  <run_depend>nav_pcontroller</run_depend>
+  <run_depend>pr2_description_lowres</run_depend>
+  <run_depend>robosherlock_process_module</run_depend>
+  <run_depend>cram_beliefstate</run_depend>
+  <run_depend>cram_graspstability</run_depend>
+  <run_depend>cram_pr2_knowledge</run_depend>
+  <run_depend>pr2_manipulation_process_module</run_depend>
+  <run_depend>pr2_manipulation_knowledge</run_depend>
+  <run_depend>pr2_navigation_process_module</run_depend>
+  <run_depend>pr2_reachability_costmap</run_depend>
+  <run_depend>designator_integration_msgs</run_depend>
+  <run_depend>continuous_interaction</run_depend>
+  <!--run_depend>spatial_relations_costmap</run_depend-->
+  
+  <export>
+  </export>
+</package>
