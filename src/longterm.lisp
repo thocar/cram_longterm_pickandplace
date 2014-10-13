@@ -33,6 +33,141 @@
 (defvar *loc-on-cupboard* nil)
 (defvar *pancake-mix* nil)
 
+(defun prob-prop (symbol values threshold &key dont-list-wrap)
+  "With the probability `threshold', a property key/value pair with the key `symbol' and a value from the list `values' is generated. Each entry of `values' is either a symbol, or a cons cell contanining the value symbol and its individual occurrence probability. If `threshold' is not reached, `NIL' is returned.
+  
+  A sample call to `prob-prop' looks like this:
+  
+  (prob-prop 'color
+             `(red (blue 0.1) green yellow white)
+             0.4)
+  
+  Which translates to: With 40% probability, generate the property `color', containing one of the values `red', `blue', `yellow', or `white'. The relative occurrence each value is 1/4.1, except for blue, which occurs with a relative probability of 0.1/4.1."
+  (when (<= (random 1.0) threshold)
+    (let* ((values-span
+             (reduce (lambda (list-so-far new-entry)
+                       (append list-so-far
+                               `(,(cons
+                                   (car new-entry)
+                                   (+ (cdr new-entry)
+                                      (cond ((> (length list-so-far) 0)
+                                             (cdr (car (last list-so-far))))
+                                            (t 0)))))))
+                     (mapcar (lambda (value)
+                               (cond ((listp value)
+                                      (cons (car value)
+                                            (cadr value)))
+                                     (t (cons value 1.0))))
+                             values)
+                     :initial-value nil))
+           (decided-prob (random (cdar (last values-span))))
+           (decided-value (reduce (lambda (x y)
+                                    (cond ((or
+                                            (not x)
+                                            (< (cdr x) decided-prob (cdr y)))
+                                           y)
+                                          (t x)))
+                                  values-span
+                                  :initial-value nil)))
+      (cond (dont-list-wrap
+             `(,symbol ,(car decided-value)))
+            (t `((,symbol ,(car decided-value))))))))
+
+(defun generate-environment-location ()
+  "Generated a location designator with random properties as defined
+in the function."
+  (let* ((possible-locations
+           `(,*loc-on-sink-block*
+             ,*loc-on-kitchen-island*
+             ,*loc-on-cupboard*)))
+    (nth (random
+          (length possible-locations))
+         possible-locations)))
+
+(defun generate-object-acted-on (&key filter-function)
+  "Generated an object designator with random properties as defined in
+the function."
+  (block generator-block
+    (loop while t
+          for object = (make-designator
+                        'object
+                        (append (prob-prop 'desig-props::type
+                                           `(desig-props::pancakemix
+                                             desig-props::dinnerplate
+                                             desig-props::muesli
+                                             (desig-props::ketchup 0.2))
+                                           0.8)
+                                (prob-prop 'desig-props::color
+                                           `(desig-props::red
+                                             (desig-props::blue 0.1)
+                                             desig-props::green
+                                             desig-props::yellow
+                                             desig-props::white)
+                                           0.4)
+                                (prob-prop 'desig-props::shape
+                                           `(desig-props::round
+                                             desig-props::flat
+                                             desig-props::box)
+                                           0.2)
+                                `((desig-props:at
+                                   ,(generate-environment-location)))))
+          when (or (not filter-function)
+                   (not (funcall filter-function object)))
+            do (return-from generator-block object))))
+
+(defun invalid-object-filter-function (object)
+  "Returns `T' when the object passed as `object' is invalid. Valid objects are:
+ - `red', `round' `ketchup'
+ - `yellow', `box', `muesli'
+ - `white', `flat', `dinnerplate'"
+  (let ((type (desig-prop-value object 'type))
+        (color (desig-prop-value object 'color))
+        (shape (desig-prop-value object 'shape)))
+    (not (or (and (eql type 'ketchup)
+                  (eql color 'red)
+                  (eql shape 'round))
+             (and (eql type 'muesli)
+                  (eql color 'yellow)
+                  (eql shape 'box))
+             (and (eql type 'dinnerplate)
+                  (eql color 'white)
+                  (eql shape 'flat))))))
+
+(defmacro try-forever (&body body)
+  `(cpl:with-failure-handling
+       (((or cram-plan-failures:object-not-found
+             cram-plan-failures:manipulation-failure
+             cram-plan-failures:location-not-reached-failure) (f)
+          (declare (ignore f))
+          (cpl:retry)))
+     ,@body))
+
+(defmacro try-n-times (n &body body)
+  `(cpl:with-retry-counters ((retry-count ,n))
+     (cpl:with-failure-handling
+         (((or cram-plan-failures:object-not-found
+               cram-plan-failures:manipulation-failure
+               cram-plan-failures:location-not-reached-failure) (f)
+            (declare (ignore f))
+            (cpl:do-retry retry-count
+              (cpl:retry))))
+       ,@body)))
+
+(def-top-level-cram-function perform-generated-task ()
+  (beliefstate:enable-logging nil)
+  (prepare-settings)
+  (beliefstate:enable-logging t)
+  (with-process-modules
+    (ensure-arms-up)
+    (try-forever
+      (let* ((object (generate-object-acted-on)))
+        (try-n-times 3
+          (pick-object object))
+        (try-forever
+          (let* ((location (generate-environment-location)))
+            (try-n-times 3
+              (place-object object location))))))))
+
 (def-top-level-cram-function longterm (&optional (runs 1))
   (with-process-modules
     (loop for i from 0 below runs
@@ -88,6 +223,22 @@
   (let ((adv (roslisp:advertise topic "geometry_msgs/PoseStamped")))
     (roslisp:publish adv (tf:pose-stamped->msg pose))))
 
+(defun set-locations ()
+  (setf *loc-on-kitchen-island*
+        (make-designator
+         'location
+         `((desig-props:on Cupboard)
+           (desig-props:name "kitchen_island"))))
+  (setf *loc-on-sink-block*
+        (make-designator
+         'location
+         `((desig-props:on Cupboard)
+           (desig-props:name "kitchen_sink_block"))))
+  (setf *loc-on-cupboard*
+        (make-designator
+         'location
+         `((desig-props:on Cupboard)))))
+
 (defun prepare-settings ()
   ;; NOTE(winkler): This validator breaks IK based `to reach' and `to
   ;; see' location resolution. Disabling it, since everything works
@@ -114,20 +265,7 @@
   ;; Twice, because sometimes a ROS message for an object gets lost.
   (sem-map-coll-env:publish-semantic-map-collision-objects)
   (sem-map-coll-env:publish-semantic-map-collision-objects)
-  (setf *loc-on-kitchen-island*
-        (make-designator
-         'location
-         `((desig-props:on Cupboard)
-           (desig-props:name "kitchen_island"))))
-  (setf *loc-on-sink-block*
-        (make-designator
-         'location
-         `((desig-props:on Cupboard)
-           (desig-props:name "kitchen_sink_block"))))
-  (setf *loc-on-cupboard*
-        (make-designator
-         'location
-         `((desig-props:on Cupboard))))
+  (set-locations)
   (setf *pancake-mix*
         (make-designator
          'object

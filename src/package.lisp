@@ -49,4 +49,8 @@
   (:import-from :cram-language def-cram-function def-top-level-cram-function)
   (:import-from :cram-reasoning def-fact-group <- not)
   (:export test-function)
-  (:desig-properties #:grasp-type #:push #:top-slide-down #:scene))
+  (:desig-properties #:grasp-type #:push #:top-slide-down
+                     #:scene #:dinnerplate #:shape #:name #:on
+                     #:pancakemix #:flat #:box #:muesli
+                     #:ketchup #:color #:yellow #:red #:blue
+                     #:green #:white))
