@@ -602,6 +602,3 @@
           (with-designators ((act (action `())))
             (format t "~a~%" act)
             (cpl:fail 'cram-plan-failures:manipulation-failed)))))))
-
-(defun test-function ()
-  (format t "Test~%"))
