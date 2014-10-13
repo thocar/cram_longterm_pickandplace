@@ -32,7 +32,7 @@
   (:nicknames longterm)
   (:use #:common-lisp #:roslisp #:cram-utilities #:designators-ros
         #:cram-roslisp-common #:cram-designators #:location-costmap
-        #:cram-plan-knowledge #:cram-plan-library #:cl-control-primitives
+        #:cram-plan-knowledge #:cram-plan-library
         #:continuous-interaction #:cram-language-designator-support)
   (:import-from :cram-language 
                 top-level fl-funcall with-tags pursue tag retry-after-suspension
@@ -46,8 +46,5 @@
   (:import-from :cram-language-designator-support with-designators)
   (:import-from :cram-language def-cram-function def-top-level-cram-function)
   (:import-from :cram-reasoning def-fact-group <- not)
-  (:import-from :cram-memoryaware
-                with-theme potential-object-location
-                get-current-theme lazy-potential-object-locations)
   (:export test-function)
   (:desig-properties #:grasp-type #:push #:top-slide-down #:scene))

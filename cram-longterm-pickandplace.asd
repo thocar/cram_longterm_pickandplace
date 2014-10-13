@@ -61,11 +61,7 @@
                designator_integration_msgs-msg
                designator_integration_msgs-srv
                cram-beliefstate
-               ;spatial-relations-costmap
-               cram-graspstability
-               continuous-interaction
-               cram-memoryaware
-               cl-control-primitives)
+               continuous-interaction)
   :components
   ((:module "src"
             :components

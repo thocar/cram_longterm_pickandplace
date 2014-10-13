@@ -10,8 +10,6 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
-  <build_depend>cram_memoryaware</build_depend>
-  <build_depend>cl_control_primitives</build_depend>
   <build_depend>cram_language</build_depend>
   <build_depend>cram_reasoning</build_depend>
   <build_depend>cram_designators</build_depend>
@@ -31,7 +29,6 @@
   <build_depend>bullet_reasoning_designators</build_depend>
   <build_depend>cram_physics_utils</build_depend>
   <build_depend>semantic_map_costmap</build_depend>
-  <build_depend>nav_pcontroller</build_depend>
   <build_depend>pr2_description_lowres</build_depend>
   <build_depend>robosherlock_process_module</build_depend>
   <build_depend>cram_beliefstate</build_depend>
@@ -42,11 +39,8 @@
   <build_depend>pr2_reachability_costmap</build_depend>
   <build_depend>designator_integration_msgs</build_depend>
   <build_depend>continuous_interaction</build_depend>
-  <!--build_depend>spatial_relations_costmap</build_depend-->
 
   <run_depend>cram_language</run_depend>
-  <run_depend>cram_memoryaware</run_depend>
-  <run_depend>cl_control_primitives</run_depend>
   <run_depend>cram_reasoning</run_depend>
   <run_depend>cram_designators</run_depend>
   <run_depend>roslisp</run_depend>
@@ -65,11 +59,9 @@
   <run_depend>bullet_reasoning_designators</run_depend>
   <run_depend>cram_physics_utils</run_depend>
   <run_depend>semantic_map_costmap</run_depend>
-  <run_depend>nav_pcontroller</run_depend>
   <run_depend>pr2_description_lowres</run_depend>
   <run_depend>robosherlock_process_module</run_depend>
   <run_depend>cram_beliefstate</run_depend>
-  <run_depend>cram_graspstability</run_depend>
   <run_depend>cram_pr2_knowledge</run_depend>
   <run_depend>pr2_manipulation_process_module</run_depend>
   <run_depend>pr2_manipulation_knowledge</run_depend>
@@ -77,7 +69,6 @@
   <run_depend>pr2_reachability_costmap</run_depend>
   <run_depend>designator_integration_msgs</run_depend>
   <run_depend>continuous_interaction</run_depend>
-  <!--run_depend>spatial_relations_costmap</run_depend-->
   
   <export>
   </export>
