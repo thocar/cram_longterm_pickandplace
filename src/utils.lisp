@@ -63,23 +63,27 @@
     (perform act-perc-scn)))
 
 (defmacro pick-object (object &key stationary)
-  `(cpl:with-failure-handling
-       ((cram-plan-failures:manipulation-failure (f)
-          (declare (ignore f))
-          (ensure-arms-up)
-          (cpl:retry))
-        (cram-plan-failures:location-not-reached-failure (f)
-          (declare (ignore f))
-          (ros-warn (longterm) "Cannot reach location. Retrying.")
-          (cpl:retry))
-        (cram-plan-failures:object-not-found (f)
-          (declare (ignore f))
-          (ros-warn (longterm) "Object not found. Retrying.")
-          (cpl:retry)))
-     ,(cond (stationary
-             `(achieve `(cram-plan-library:object-picked ,,object)))
-            (t
-             `(achieve `(cram-plan-library:object-in-hand ,,object))))))
+  `(cpl:with-retry-counters ((retry-task 0))
+     (cpl:with-failure-handling
+         ((cram-plan-failures:manipulation-failure (f)
+            (declare (ignore f))
+            (cpl:do-retry retry-task
+              (ensure-arms-up)
+              (cpl:retry)))
+          (cram-plan-failures:location-not-reached-failure (f)
+            (declare (ignore f))
+            (cpl:do-retry retry-task
+              (ros-warn (longterm) "Cannot reach location. Retrying.")
+              (cpl:retry)))
+          (cram-plan-failures:object-not-found (f)
+            (declare (ignore f))
+            (cpl:do-retry retry-task
+              (ros-warn (longterm) "Object not found. Retrying.")
+              (cpl:retry))))
+       ,(cond (stationary
+               `(achieve `(cram-plan-library:object-picked ,,object)))
+              (t
+               `(achieve `(cram-plan-library:object-in-hand ,,object)))))))
 
 (defmacro place-object (object location &key stationary)
   `(cpl:with-failure-handling
@@ -166,7 +170,7 @@
 (defgeneric init-ms-belief-state (&key debug-window objects))
 
 (defmethod init-ms-belief-state (&key debug-window objects)
-  (ros-info (bullet) "Clearing buller world")
+  (ros-info (bullet) "Clearing bullet world")
   (crs:prolog `(btr:clear-bullet-world))
   (let* ((test-0 (ros-info (bullet) "Gathering data"))
          (robot-pose (get-robot-pose))
@@ -242,7 +246,26 @@
      (lazy-car
       (crs:prolog
        `(btr:%object ?w sem-map-kitchen ?sem-map) bdgs)))
-    (ros-info (bullet) "Done")))
+    (ros-info (bullet) "Done")
+    (robosherlock-pm::ignore-bullet-object 'sem-map-kitchen)
+    (robosherlock-pm::ignore-bullet-object 'common-lisp::floor)
+    (robosherlock-pm::ignore-bullet-object 'cram-pr2-knowledge::pr2)))
+
+(defmethod init-belief-state-temp ()
+  (crs:prolog
+   `(and (btr:clear-bullet-world)
+         (btr:bullet-world ?w)
+         (btr:assert (btr:object
+                      ?w btr:static-plane floor
+                      ((0 0 0) (0 0 0 1))
+                      :normal (0 0 1) :constant 0))
+         (btr:debug-window ?w)
+         (btr:robot ?robot)
+         (assert (btr:object
+                  ?w btr:urdf ?robot
+                  ((0 0 0) (0 0 0 1))
+                  :urdf ,(cl-urdf:parse-urdf
+                          (roslisp:get-param "robot_description_lowres")))))))
 
 (defmacro with-process-modules (&body body)
   `(cpm:with-process-modules-running
@@ -286,11 +309,13 @@
       (perform ps-action))))
 
 (defun ensure-arms-up (&optional side)
-  (cpl:with-failure-handling
-      ((cram-plan-failures:manipulation-failure (f)
-         (declare (ignore f))
-         (cpl:retry)))
-    (move-arms-up :side side :ignore-collisions nil)))
+  (let ((ignore-collisions nil))
+    (cpl:with-failure-handling
+        ((cram-plan-failures:manipulation-failure (f)
+           (declare (ignore f))
+           (setf ignore-collisions t)
+           (cpl:retry)))
+      (move-arms-up :side side :ignore-collisions ignore-collisions))))
 
 (defun renew-collision-environment ()
   (moveit:clear-collision-environment)
@@ -322,7 +347,7 @@
   (setf btr::*bb-comparison-validity-threshold* 0.1)
   (moveit:clear-collision-environment)
   ;; Twice, because sometimes a ROS message for an object gets lost.
-  (sem-map-coll-env:publish-semantic-map-collision-objects)
+  ;(sem-map-coll-env:publish-semantic-map-collision-objects)
   (sem-map-coll-env:publish-semantic-map-collision-objects))
 
 (defun wait-for-external-trigger (&key force)
@@ -338,3 +363,108 @@
       (loop until (cpl:value waiter-fluent) do (sleep 0.1))
       (roslisp:unsubscribe subscriber))
     (roslisp:ros-info (demo-control) "External trigger arrived.")))
+
+(def-fact-group object-refinement-facts (infer-object-property)
+  
+  (<- (make-handles ?segments ?offset-angle ?handles)
+    (symbol-value pi ?pi)
+    (crs:lisp-fun / ?pi 2 ?pi-half)
+    (make-handles 0.04 ?segments ?offset-angle 'desig-props::push
+                  ?pi-half 0 0 0 0 0 ?handles))
+  
+  (<- (make-handles ?distance-from-center ?segments ?offset-angle ?grasp-type
+                    ?hand-ax ?hand-ay ?hand-az ?co-x ?co-y ?co-z ?handles)
+    (crs:lisp-fun tf:make-3d-vector ?co-x ?co-y ?co-z ?co)
+    (crs:lisp-fun make-handles ?distance-from-center
+                  :segments ?segments
+                  :offset-angle ?offset-angle
+                  :grasp-type ?grasp-type
+                  :ax ?hand-ax
+                  :ay ?hand-ay
+                  :az ?hand-az
+                  :center-offset ?co
+                  ?handles))
+  
+  (<- (type-property desig-props:pot desig-props::carry-handles 2))
+  
+  (<- (type-property desig-props:pot desig-props::lid t))
+  
+  (<- (infer-object-property ?object ?key ?value)
+    (desig-prop ?object (desig-props:type ?type))
+    (type-property ?type ?key ?value))
+  
+  (<- (infer-object-property ?object ?key ?value)
+    (desig-prop ?object (desig-props:color desig-props::blue))
+    (equal ?key desig-props::owner)
+    (equal ?value "Jan"))
+  
+  (<- (infer-object-property ?object desig-props:type desig-props::pancakemix)
+    (desig-prop ?object (desig-props:color (desig-props::red ?red)))
+    (desig-prop ?object (desig-props:color (desig-props::yellow ?yellow)))
+    (desig-prop ?object (desig-props:color (desig-props::blue ?blue)))
+    (desig-prop ?object (desig-props:color (desig-props::white ?white)))
+    (< ?red 0.5)
+    (< ?blue 0.1)
+    (< ?white 0.4)
+    (> ?yellow 0.1))
+
+  (<- (infer-object-property ?object desig-props:type desig-props::dinnerplate)
+    (desig-prop ?object (desig-props:color (desig-props::white ?white)))
+    (> ?white 0.8))
+  
+  (<- (infer-object-property ?object desig-props:type desig-props::muesli)
+    (desig-prop ?object (desig-props:color (desig-props::red ?red)))
+    (desig-prop ?object (desig-props:color (desig-props::yellow ?yellow)))
+    (desig-prop ?object (desig-props:color (desig-props::blue ?blue)))
+    (desig-prop ?object (desig-props:color (desig-props::white ?white)))
+    (> ?red 0.5)
+    (> ?yellow 0.15)
+    (< ?blue 0.1)
+    (< ?white 0.1))
+  
+  (<- (infer-object-property ?object desig-props:type desig-props::milkbox)
+    (desig-prop ?object (desig-props:color (desig-props::red ?red)))
+    (desig-prop ?object (desig-props:color (desig-props::yellow ?yellow)))
+    (desig-prop ?object (desig-props:color (desig-props::white ?white)))
+    (desig-prop ?object (desig-props:color (desig-props::blue ?blue)))
+    (> ?white 0.4)
+    (> ?blue 0.0)
+    (< ?yellow 0.3)
+    (< ?red 0.2))
+  
+  (<- (infer-object-property ?object desig-props:handle ?handle)
+    (infer-object-property ?object desig-props:type ?type)
+    (object-handle ?type ?handles-list)
+    (member ?handle ?handles-list))
+  
+  (<- (object-handle desig-props::milkbox ?handles-list)
+    (symbol-value pi ?pi)
+    (crs:lisp-fun / ?pi 2 ?pi-half)
+    (make-handles 2 ?pi-half ?handles-list))
+  
+  (<- (object-handle desig-props::muesli ?handles-list)
+    (symbol-value pi ?pi)
+    (crs:lisp-fun / ?pi 2 ?pi-half)
+    (make-handles 2 ?pi-half ?handles-list))
+
+  (<- (object-handle desig-props::pancakemix ?handles-list)
+    (symbol-value pi ?pi)
+    (crs:lisp-fun / ?pi 2 ?pi-half)
+    (make-handles 2 ?pi-half ?handles-list))
+  
+  (<- (object-handle desig-props::dinnerplate ?handles-list)
+    (symbol-value pi ?pi)
+    (crs:lisp-fun / ?pi 4 ?tilt)
+    (crs:lisp-fun / ?pi -2.5 ?pi-half)
+    (make-handles -0.07 8 ?pi-half 'desig-props::push ?pi ?tilt 0 0 0 -0.015 ?handles-list))
+
+  (<- (infer-object-property ?object desig-props::carry-handles ?carry-handles)
+    (infer-object-property ?object desig-props:type ?type)
+    (object-carry-handles ?type ?carry-handles))
+  
+  ;; Dinnerplate: Carry with 2 arms
+  (<- (object-carry-handles desig-props::dinnerplate 2))
+  ;; Muesli: Carry with 1 arm
+  (<- (object-carry-handles desig-props::muesli 1))
+  ;; Milkbox: Carry with 1 arm
+  (<- (object-carry-handles desig-props::milkbox 1)))
