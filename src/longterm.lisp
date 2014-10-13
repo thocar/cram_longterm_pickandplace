@@ -34,32 +34,55 @@
 (defvar *pancake-mix* nil)
 
 (def-top-level-cram-function longterm (&optional (runs 1))
-  (beliefstate:enable-logging t)
-  (let ((possible-putdown-locations
-          `(;,*loc-on-sink-block*
-            ,*loc-on-kitchen-island*)))
-    (with-process-modules
-      (ensure-arms-up)
-      (let ((object *pancake-mix*))
-        (loop for i from 0 below runs
-              as loc-target = (nth (random
-                                    (length possible-putdown-locations))
-                                   possible-putdown-locations)
-              do (perceive-scene)
+  (with-process-modules
+    (loop for i from 0 below runs
+          do (ensure-arms-up)
+             (cpl:with-failure-handling
+                 (((or cram-plan-failures:object-not-found
+                       cram-plan-failures:manipulation-failure
+                       cram-plan-failures:location-not-reached-failure) (f)
+                    (declare (ignore f))
+                    (cpl:retry)))
+               (beliefstate:enable-logging nil)
+               (prepare-settings)
+               (beliefstate:enable-logging t)
+               (let* ((possible-putdown-locations
+                        `(,*loc-on-sink-block*
+                          ,*loc-on-kitchen-island*))
+                      (object *pancake-mix*)
+                      (loc-target
+                        (nth (random
+                              (length possible-putdown-locations))
+                             possible-putdown-locations)))
+                 ;(perceive-scene)
                  (pick-object object)
-                 (perceive-scene)
                  (place-object object loc-target))))))
 
-  ;; (with-known-object-types ((obj 'desig-props::pancakemix 'desig-props::pancakemix0))
-  ;;   (cond ((on-surface-p obj)
-  ;;          ;; Handle object on surface here
-  ;;          (format t "Getting object from surface~%")
-  ;;          (pick-object obj))
-  ;;         ((in-container-p obj)
-  ;;          ;; Handle object in container here
-  ;;          (format t "Getting object from container~%")
-  ;;          (open-container (container-for obj)))
-  ;;         (t (format t "Invalid object location~%")))))
+(def-top-level-cram-function table-setting ()
+  (with-process-modules
+    (ensure-arms-up)
+    (cpl:with-failure-handling
+        (((or cram-plan-failures:object-not-found
+              cram-plan-failures:manipulation-failure
+              cram-plan-failures:location-not-reached-failure) (f)
+           (declare (ignore f))
+           (cpl:retry)))
+      (beliefstate:enable-logging nil)
+      (prepare-settings)
+      (beliefstate:enable-logging t)
+      (with-designators
+          ((plate (object `((desig-props::type
+                             desig-props::dinnerplate)
+                            (desig-props::at
+                             ,*loc-on-sink-block*))))
+           (milkbox (object `((desig-props::type
+                               desig-props::milkbox)
+                              (desig-props::at
+                             ,*loc-on-sink-block*)))))
+        (pick-object milkbox)
+        (place-object milkbox *loc-on-kitchen-island*)
+        (pick-object plate)
+        (place-object plate *loc-on-kitchen-island*)))))
 
 (defun publish-pose (pose &optional (topic "/object"))
   (let ((adv (roslisp:advertise topic "geometry_msgs/PoseStamped")))
@@ -84,199 +107,43 @@
   ;; value. Otherwise, the (very long, > 2.0 seconds) motion planning
   ;; process will just drop the connection and never execute.
   (setf actionlib::*action-server-timeout* 20)
-  (beliefstate::enable-logging t)
+  ;(beliefstate::enable-logging t)
   (init-ms-belief-state :debug-window t)
   (setf btr::*bb-comparison-validity-threshold* 0.1)
   (moveit:clear-collision-environment)
   ;; Twice, because sometimes a ROS message for an object gets lost.
   (sem-map-coll-env:publish-semantic-map-collision-objects)
   (sem-map-coll-env:publish-semantic-map-collision-objects)
-  (top-level
-    (setf *loc-on-kitchen-island*
-          (make-designator
-           'location
-           `((desig-props:on Cupboard)
-             (desig-props:name "kitchen_island"))))
-    (setf *loc-on-sink-block*
-          (make-designator
-           'location
-           `((desig-props:on Cupboard)
-             (desig-props:name "kitchen_sink_block"))))
-    (setf *loc-on-cupboard*
-          (make-designator
-           'location
-           `((desig-props:on Cupboard))))
-    (setf *pancake-mix*
-          (make-designator
-           'object
-           `((desig-props:at ,*loc-on-kitchen-island*);,*loc-on-sink-block*);,*loc-on-cupboard*)
-             (desig-props::type desig-props::pancakemix)
-             (desig-props::max-handles 1)
-             ,@(mapcar
-                (lambda (handle-object)
-                  `(desig-props:handle ,handle-object))
-                (make-handles
-                 0.04
-                 :segments 2
-                 :offset-angle (/ pi 2)
-                 :ax (/ pi 2)
-                 :center-offset
-                 (tf:make-3d-vector 0.02 0.0 0.0))))))))
-
-;; (defun try-batch-traj ()
-;;   (let* ((trajectories-to-check
-;;            (multiple-value-bind
-;;                  (state trajectory)
-;;                (moveit::move-link-pose
-;;                 "r_wrist_roll_link"
-;;                 "right_arm"
-;;                 (tf:make-pose-stamped
-;;                  "/base_link"
-;;                  (roslisp:ros-time)
-;;                  (tf:make-3d-vector 0.6 -0.2 0.9)
-;;                  (tf:make-identity-rotation))
-;;                 :plan-only t
-;;                 :touch-links (pr2-manip-pm::links-for-arm-side :right))
-;;              (vector trajectory)))
-;;          (result (roslisp:call-service
-;;                   "/BatchTrajectoryCheck"
-;;                   'robokata-srv::batchtrajectorycheck
-;;                   :split_count 20
-;;                   :trajectory_count (length trajectories-to-check)
-;;                   :group_name (vector "right_arm")
-;;                   :trajectories trajectories-to-check)))
-;;     (values trajectories-to-check result)))
-
-;; (defun try-batch-traj-2 (valid-traj)
-;;   (let* ((trajectories-to-check
-;;            (multiple-value-bind
-;;                  (state trajectory)
-;;                (moveit::move-link-pose
-;;                 "r_wrist_roll_link"
-;;                 "right_arm"
-;;                 (tf:make-pose-stamped
-;;                  "/base_link"
-;;                  (roslisp:ros-time)
-;;                  (tf:make-3d-vector 0.6 -0.2 1.0)
-;;                  (tf:make-identity-rotation))
-;;                 :plan-only t
-;;                 :touch-links (pr2-manip-pm::links-for-arm-side :right))
-;;              (vector valid-traj trajectory)))
-;;          (result (roslisp:call-service
-;;                   "/BatchTrajectoryCheck"
-;;                   'robokata-srv::batchtrajectorycheck
-;;                   :split_count 20
-;;                   :trajectory_count (length trajectories-to-check)
-;;                   :group_name (vector "right_arm")
-;;                   :trajectories trajectories-to-check)))
-;;     (values trajectories-to-check result)))
-
-;; (defun try-batch-traj-3 (traj)
-;;   (let* ((result (roslisp:call-service
-;;                   "/BatchTrajectoryCheck"
-;;                   'robokata-srv::batchtrajectorycheck
-;;                   :split_count 20
-;;                   :trajectory_count 1
-;;                   :group_name (vector "right_arm")
-;;                   :trajectories (vector traj))))
-;;     result))
-
-;; (defun try-cap-pose ()
-;;   (let ((pose (tf:make-pose-stamped
-;;                  "/base_link"
-;;                  (roslisp:ros-time)
-;;                  (tf:make-3d-vector 0.6 -0.2 0.9)
-;;                  (tf:make-identity-rotation))))
-;;     (roslisp:call-service
-;;      "/CapMapPoseQuery"
-;;      'robokata-srv::capmapposequery
-;;      :query_count 1
-;;      :pose_queries
-;;      (vector
-;;       (make-message "robokata/PoseQuery"
-;;                     :group_name "right_arm"
-;;                     :pose (tf:pose-stamped->msg pose)
-;;                     :pointing_vector (vector 1 0 0)
-;;                     :facing_vector (vector 0 0 1)
-;;                     :radius 0.3
-;;                     :capable_candidates 10)))))
-
-;; (defun try-dual-arm ()
-;;   (setf actionlib::*action-server-timeout* 200)
-;;   (moveit::move-links-poses
-;;    (list "l_wrist_roll_link" "r_wrist_roll_link")
-;;    "both_arms"
-;;    (list (tf:make-pose-stamped
-;;           "/base_link" (roslisp:ros-time)
-;;           (tf:make-3d-vector 0.6 0.2 1.0)
-;;           (tf:make-identity-rotation))
-;;          (tf:make-pose-stamped
-;;           "/base_link" (roslisp:ros-time)
-;;           (tf:make-3d-vector 0.6 -0.2 1.0)
-;;           (tf:make-identity-rotation)))))
-
-;; (defun test-parabel ()
-;;   (block check
-;;     (flet ((parabel-value (x &key (y-offset 0) (spread 1) (flatness 1))
-;;              (+ y-offset (* (* (* x spread) (* spread x)) flatness))))
-;;       (let ((frame "/base_link")
-;;             (link-name "r_wrist_roll_link")
-;;             (planning-group "right_arm")
-;;             (vec-start (tf:make-3d-vector 0.6 -0.2 0.9))
-;;             (vec-end (tf:make-3d-vector 0.6 -0.4 0.9))
-;;             (orientation (tf:make-identity-rotation))
-;;             (stepsize 0.1)
-;;             (joint-names (vector "r_shoulder_pan_joint" "r_shoulder_lift_joint"
-;;                                  "r_upper_arm_roll_joint" "r_elbow_flex_joint"
-;;                                  "r_forearm_roll_joint" "r_wrist_flex_joint" "r_wrist_roll_joint")))
-;;         (let* ((swap nil)
-;;                (vec-start (if swap vec-end vec-start))
-;;                (vec-end (if swap vec-start vec-end)))
-;;           (flet ((fraction-vector (fraction)
-;;                    (tf:v+ vec-start (tf:v* (tf:v- vec-end vec-start) fraction)
-;;                           (tf:make-3d-vector
-;;                            0 0 (parabel-value fraction
-;;                                               :flatness (- (tf:y vec-end)
-;;                                                            (tf:y vec-start))))))
-;;                  (fraction-pose (frac-vec)
-;;                    (tf:make-pose-stamped
-;;                     frame (roslisp:ros-time)
-;;                     frac-vec orientation))
-;;                  (joint-value-from-ik (ik joint-name)
-;;                    (with-fields (joint_state) ik
-;;                      (with-fields (name position) joint_state
-;;                        (let ((jt-pos (position joint-name name :test #'string=)))
-;;                          (elt position jt-pos))))))
-;;             (let ((last-ik nil))
-;;               (make-message
-;;                "moveit_msgs/RobotTrajectory"
-;;                :joint_trajectory
-;;                (make-message
-;;                 "trajectory_msgs/JointTrajectory"
-;;                 :joint_names joint-names
-;;                 :points (map
-;;                          'vector
-;;                          (lambda (x)
-;;                            (let* ((frac-vec (fraction-vector x))
-;;                                   (frac-pose (fraction-pose frac-vec))
-;;                                   (ik (moveit:compute-ik
-;;                                        link-name planning-group frac-pose
-;;                                        :robot-state last-ik)))
-;;                              (unless ik
-;;                                (return-from check))
-;;                              (prog1
-;;                                  (let ((traj-pt
-;;                                          (make-message
-;;                                           "trajectory_msgs/JointTrajectoryPoint"
-;;                                           :time_from_start (* x 5)
-;;                                           :positions
-;;                                           (map 'vector (lambda (joint-name)
-;;                                                          (joint-value-from-ik ik joint-name))
-;;                                                joint-names))))
-;;                                    traj-pt)
-;;                                (setf last-ik ik))))
-;;                          (loop for x from -1.0 to 1.0 by stepsize
-;;                                collect x)))))))))))
+  (setf *loc-on-kitchen-island*
+        (make-designator
+         'location
+         `((desig-props:on Cupboard)
+           (desig-props:name "kitchen_island"))))
+  (setf *loc-on-sink-block*
+        (make-designator
+         'location
+         `((desig-props:on Cupboard)
+           (desig-props:name "kitchen_sink_block"))))
+  (setf *loc-on-cupboard*
+        (make-designator
+         'location
+         `((desig-props:on Cupboard))))
+  (setf *pancake-mix*
+        (make-designator
+         'object
+         `((desig-props:at ,*loc-on-kitchen-island*);,*loc-on-cupboard*);,*loc-on-sink-block*)
+           (desig-props::type desig-props::pancakemix)
+           (desig-props::max-handles 1)
+           ,@(mapcar
+              (lambda (handle-object)
+                `(desig-props:handle ,handle-object))
+              (make-handles
+               0.04
+               :segments 2
+               :offset-angle (/ pi 2)
+               :ax (/ pi 2)
+               :center-offset
+               (tf:make-3d-vector 0.02 0.0 0.0)))))))
 
 (def-top-level-cram-function model-tasks ()
   (cpl:with-retry-counters ((manip-cnt 5)
@@ -602,3 +469,381 @@
           (with-designators ((act (action `())))
             (format t "~a~%" act)
             (cpl:fail 'cram-plan-failures:manipulation-failed)))))))
+
+(defun avoid-collision-environment-validator (desig pose)
+  (let ((to (desig-prop-value desig 'desig-props:to)))
+    (if (or (eql to 'desig-props:see)
+            (eql to 'desig-props:reach))
+        (if (moveit::check-base-pose-validity
+             (tf:pose->pose-stamped
+              "map" 0.0 pose))
+            (prog1 :accept (format t "I say yes~%"))
+            (prog1 :reject (format t "I say no~%")))
+        (prog1 :unknown (format t "I say unknown~%")))))
+
+(defun make-access-restriction-cost-function ()
+  (let ((min-x -0.9)
+        (min-y -0.95)
+        (max-x  1.5)
+        (max-y  1.4))
+    (lambda (x y)
+      (if (and (>= x min-x)
+               (<= x max-x)
+               (>= y min-y)
+               (<= y max-y))
+          1.0d0
+          0.0d0))))
+
+(defun make-area-restriction-cost-function ()
+  (let ((min-x -0.9)
+        (min-y -0.95)
+        (max-x  1.5)
+        (max-y  1.7)
+        (sink-block-min-y 0.0)
+        (sink-block-max-y 1.0))
+    (lambda (x y)
+      (if (> x max-x)
+          0.0d0 ;; Invalid due to too large x
+          (if (and (> x 0.0)
+                   (> y min-y)
+                   (< y sink-block-max-y)
+                   (> y sink-block-min-y))
+              1.0d0 ;; Valid region on sink block
+              (if (and (<= x 0.0) ;; Other side of kitchen
+                       (> x min-x)
+                       (> y min-y)
+                       (< y max-y))
+                  (if (> y 0.4) ;; On kitchen island side
+                      (if (and (< x -0.6) ;; Lower boundary for kitchen island
+                               (> x -0.7))
+                          0.0d0
+                          (if (and (> y 0.65)
+                                   (< y 2.5))
+                              1.0d0
+                              0.0d0))
+                      (if (and (< x -0.6) ;; Lower boundary for pancake table
+                               (> x -0.95))
+                          0.0d0
+                          1.0d0))
+                  0.0d0))))))
+
+(defmethod costmap-generator-name->score ((name (common-lisp:eql 'area-restriction-distribution)))
+  107)
+
+(defmethod costmap-generator-name->score ((name (common-lisp:eql 'access-restriction-distribution)))
+  108)
+
+(def-fact-group demo-costmap-desigs (desig-costmap)
+
+  (<- (desig-costmap ?desig ?cm)
+    (desig-prop ?desig (desig-props:on ?_))
+    (costmap ?cm)
+    (costmap-add-function area-restriction-distribution
+                          (make-area-restriction-cost-function)
+                          ?cm))
+
+  (<- (desig-costmap ?desig ?cm)
+    (or (desig-prop ?desig (desig-props:to desig-props:see))
+        (desig-prop ?desig (desig-props:to desig-props:reach)))
+    (costmap ?cm)
+    (costmap-add-function access-restriction-distribution
+                          (make-access-restriction-cost-function)
+                          ?cm)))
+
+(def-top-level-cram-function choose-test (&optional (predict-outcome t))
+  (setf beliefstate::*enable-prediction* predict-outcome)
+  (beliefstate:enable-logging t)
+  (with-process-modules
+    (with-designators ((loc (location `((desig-props::on Cupboard)
+                                        (desig-props::name "kitchen_island"))))
+                       (obj-1 (object `((desig-props:at ,loc)
+                                        (desig-props::type
+                                         desig-props::pancakemix))))
+                       (obj-2 (object `((desig-props:at ,loc)
+                                        (desig-props::type
+                                         desig-props::spatula))))
+                       (obj-3 (object `((desig-props:at ,loc)
+                                        (desig-props::type
+                                         desig-props::dinnerplate))))
+                       (obj-4 (object `((desig-props:at ,loc)
+                                        (desig-props::type
+                                         desig-props::ketchup)))))
+      (let ((i 0)
+            (steps-taken 0)
+            (objects `(,obj-1 ,obj-2 ,obj-3 ,obj-4)))
+        (loop while (< i (* 25 (length objects)))
+              do (cpl:with-failure-handling
+                     ((cram-plan-failures:object-not-found (f)
+                        (declare (ignore f))
+                        (format t "Failure: Object not found~%")
+                        (cpl:retry)))
+                   (format t "Step: ~a~%" i)
+                   (incf i)
+                   (incf steps-taken)
+                   (find-object (nth (mod i (length objects)) objects)
+                                "kitchen_island")))
+        steps-taken))))
+
+(def-cram-function find-object (obj area)
+  (let ((loc (desig-prop-value obj 'desig-props:at)))
+    (cut:choose
+     test-find-object
+     :generators (((looking-at-pose)
+                   `(,(reference
+                       (cram-plan-library::next-solution
+                        (desig:current-desig loc)))))
+                  ((area) `(,area))
+                  ((robot-pose) `(,(moveit:ensure-pose-stamped-transformed
+                                    (tf:make-pose-stamped
+                                     "/base_footprint" 0.0
+                                     (tf:make-identity-vector)
+                                     (tf:make-identity-rotation))
+                                    "/map"))))
+     :features ((look-x (tf:x (tf:origin looking-at-pose)))
+                (look-y (tf:y (tf:origin looking-at-pose)))
+                (obj-type (desig-prop-value obj 'desig-props::type)))
+     :constraints ((cram-plan-failures::objectnotfound
+                    (or (< cut::predicted-failure 0.5))))
+     :predicting (time)
+     :attempts 10
+     :body
+     (progn
+       (achieve `(cram-plan-library:looking-at ,looking-at-pose))
+       (let ((found-objects
+               (cram-plan-library:perceive-object
+                'cram-plan-library:currently-visible
+                obj)))
+         (unless found-objects
+           (cpl:fail 'cram-plan-failures:object-not-found))
+         found-objects)))))
+
+(def-top-level-cram-function choose-test-offline (&optional (predict t) (trials 100))
+  (beliefstate:enable-logging t)
+  (setf cram-prediction::*enable-prediction* predict)
+  (with-process-modules
+    (with-designators ((loc (location `((desig-props::pose
+                                         ,(tf:make-pose-stamped
+                                           "/map" 0.0
+                                           (tf:make-3d-vector 1 2 3)
+                                           (tf:make-identity-rotation)))))))
+      (let ((i 0))
+        (loop while (< i trials)
+              do (cpl:with-failure-handling
+                     ((cram-plan-failures:location-not-reached-failure (f)
+                        (declare (ignore f))
+                        (format t "Failure: Location not reached~%")
+                        (cpl:retry))
+                      (cram-plan-failures:object-not-found (f)
+                        (declare (ignore f))
+                        (format t "Failure: Object not found~%")
+                        (cpl:retry)))
+                   (format t "Step: ~a~%" i)
+                   (incf i)
+                   (navigate-to)))))))
+
+(def-cram-function navigate-to ()
+  (cut:choose
+   navigate
+   :features ((nav-x (/ (random 100) 10.0))
+              (nav-y (/ (random 100) 10.0)))
+   :constraints ((desig-props::locationnotreached
+                  (or (not cut::predicted-failure)
+                      (< cut::predicted-failure
+                         0.5))))
+   :predicting (time)
+   :attempts 2
+   :body
+   (progn
+     (unless (or (< 2 nav-x 8)
+                 (< 3 nav-y 9))
+       (cpl:fail
+        'cram-plan-failures:location-not-reached-failure))
+     (look-at nav-x nav-y))))
+
+(def-cram-function look-at (nav-x nav-y)
+  (prediction:choose
+   look-at
+   :features ((look-x (/ (random 100) 10.0))
+              (look-y (/ (random 100) 10.0))
+              (distance (tf:v-dist (tf:make-3d-vector nav-x nav-y 0)
+                                   (tf:make-3d-vector look-x look-y 0))))
+   :constraints ((desig-props::objectnotfound
+                  (progn
+                    (format t "~a~%" cut::predicted-failure)
+                    (or (not cut::predicted-failure)
+                        (< cut::predicted-failure
+                           0.5)))))
+   :predicting (time)
+   :attempts 2
+   :body
+   (unless (< distance 5)
+     (cpl:fail 'cram-plan-failures:object-not-found))))
+
+(def-top-level-cram-function test-series ()
+  (loop for j from 0 below 50
+        do (with-designators ()
+             (with-designators ()
+               (with-designators ()
+                 (loop for i from 0 below 10
+                       do (with-designators ()
+                            (with-designators ()
+                              (with-designators ()
+                                )))))))))
+
+(defun run-experiment (&key (steps 10) (trials-step 2))
+  (loop for i from 0 below steps
+        do (progn
+             (format t "Unpredicted run. Press Enter to continue.~%")
+             (read-line)
+             (sample-data-evaluation :predict nil :trials (* (1+ i) trials-step))
+             (beliefstate:set-metadata
+              :experiment "Unpredicted Sample Data Recording")
+             (beliefstate:extract-files)
+             (format t "Predicted run. Press Enter to continue.~%")
+             (read-line)
+             (prediction::load-decision-tree "/home/winkler/dtree-model.json")
+             (prediction::load-model "/home/winkler/task-model.json")
+             (sample-data-evaluation :predict t :trials (* (1+ i) trials-step))
+             (beliefstate:set-metadata
+              :experiment "Predicted Sample Data Recording")
+             (beliefstate:extract-files))))
+
+(def-top-level-cram-function sample-data-evaluation (&key (predict t)
+                                                          (trials 100))
+  (beliefstate:enable-logging t)
+  (setf cram-prediction::*enable-prediction* predict)
+  (let ((i trials))
+    (block nil
+      (loop while (> (decf i) 0)
+            do (format t "Step ~a / ~a~%" i trials)
+               (cpl:with-failure-handling
+                   ((cram-plan-failures::simple-plan-failure (f)
+                      (declare (ignore f))
+                      (when (< i trials) (return nil))
+                      (cpl:retry)))
+                 (sample-pick))
+               (cpl:with-failure-handling
+                   ((cram-plan-failures::simple-plan-failure (f)
+                      (declare (ignore f))
+                      (when (< i trials) (return nil))
+                      (cpl:retry)))
+                 (sample-place))))))
+
+(def-cram-function sample-pick ()
+  (:tag pick
+    (cpl:with-retry-counters ((cnt-perc 3)
+                              (cnt-nav 3)
+                              (cnt-grasp 3))
+      (let ((obj-position
+              (cpl:with-failure-handling
+                  ((cram-plan-failures:object-not-found (f)
+                     (declare (ignore f))
+                     (cpl:do-retry cnt-perc
+                       (cpl:retry))
+                     (cpl:fail 'cram-plan-failures::simple-plan-failure)))
+                (sample-perceive))))
+        (unless obj-position
+          (cpl:fail 'cram-plan-failures::simple-plan-failure))
+        (cpl:with-failure-handling
+            ((cram-plan-failures:location-not-reached-failure (f)
+               (declare (ignore f))
+               (cpl:do-retry cnt-nav
+                 (cpl:retry))
+               (cpl:fail 'cram-plan-failures::simple-plan-failure)))
+          (sample-navigate obj-position))
+        (cpl:with-failure-handling
+            ((cram-plan-failures:manipulation-pose-unreachable (f)
+               (declare (ignore f))
+               (cpl:do-retry cnt-grasp
+                 (cpl:retry))
+               (cpl:fail 'cram-plan-failures::simple-plan-failure)))
+          (sample-grasp))))))
+
+(def-cram-function sample-perceive ()
+  (prediction:choose
+   perceive
+   :generators (((look-position)
+                 `(,(tf:make-3d-vector (/ (random 100) 10.0)
+                                       (/ (random 100) 10.0)
+                                       0.0))))
+   :features ((look-x (tf:x look-position))
+              (look-y (tf:y look-position)))
+   :constraints ((cram-plan-failures::objectnotfound
+                  (or (not cut::predicted-failure)
+                      (< cut::predicted-failure
+                         0.5))))
+   :predicting (time)
+   :attempts 2
+   :body
+   (progn
+     (unless (and (< look-x 5)
+                  (< look-y 9))
+       (cpl:fail
+        'cram-plan-failures:object-not-found))
+     look-position)))
+
+(def-cram-function sample-navigate (obj-position)
+  (format t "Go in: ~a~%" obj-position)
+  (cut:choose
+   navigate
+   :generators (((nav-position)
+                 `(,(tf:make-3d-vector (/ (random 100) 10.0)
+                                       (/ (random 100) 10.0)
+                                       0.0))))
+   :features ((nav-x (tf:x nav-position))
+              (nav-y (tf:y nav-position))
+              (distance (tf:v-dist nav-position
+                                   obj-position)))
+   :constraints ((cram-plan-failures::locationnotreached
+                  (or (not cut::predicted-failure)
+                      (< cut::predicted-failure
+                         0.5)))
+                 (cram-plan-failures::manipulationposeunreachable
+                  (or (not cut::predicted-failure)
+                      (< cut::predicted-failure
+                         0.5))))
+   :predicting (time)
+   :attempts 2
+   :body
+   (progn
+     (unless (and (< 2 nav-x 8)
+                  (< 3 nav-y 9))
+       (cpl:fail
+        'cram-plan-failures:location-not-reached-failure))
+     (unless (< distance 3)
+       (cpl:fail
+        'cram-plan-failures:manipulation-pose-unreachable)))))
+
+(def-cram-function sample-grasp ()
+  (:tag grasp))
+
+(def-cram-function sample-place ()
+  (:tag place))
+
+(def-top-level-cram-function test-rethrow ()
+  (let ((fail t))
+    (cpl:with-failure-handling
+        ((cram-plan-failures:object-not-found (f)
+           (declare (ignore f))
+           (cpl:retry)))
+      (cpl:with-failure-handling
+          ((cram-plan-failures:object-not-found (f)
+             (declare (ignore f))))
+        (when fail
+          (setf fail nil)
+          (cpl:fail 'cram-plan-failures:object-not-found))))))
+
+(def-top-level-cram-function test-equate ()
+  (with-designators ((obj-1 (object `()))
+                     (obj-2 (object `()))
+                     (obj-3 (object `())))
+    (with-designators ((obj-4 (object `())))
+      (equate obj-3 obj-4))))
+
+(def-top-level-cram-function new-perception-interface (&key (types nil))
+  (let ((results (robosherlock-pm::perceive
+                  (cram-designators:make-designator 'object nil))))
+    (cond (types
+           (dolist (result results)
+             (format t "~a~%" (desig-prop-value result 'desig-props::type))))
+          (t results))))
