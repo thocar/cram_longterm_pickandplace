@@ -35,7 +35,8 @@
   :maintainer "Jan Winkler <winkler@cs.uni-bremen.de>"
   :licence "BSD"
   :description "CRAM Longterm Pick and Place"
-  :depends-on (roslisp
+  :depends-on (cram-prediction
+               roslisp
                designators-ros
                cram-roslisp-common
                cram-plan-library

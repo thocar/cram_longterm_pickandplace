@@ -10,6 +10,7 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
+  <build_depend>cram_prediction</build_depend>
   <build_depend>cram_memoryaware</build_depend>
   <build_depend>cl_control_primitives</build_depend>
   <build_depend>cram_language</build_depend>
@@ -44,6 +45,7 @@
   <build_depend>continuous_interaction</build_depend>
   <!--build_depend>spatial_relations_costmap</build_depend-->
 
+  <run_depend>cram_prediction</run_depend>
   <run_depend>cram_language</run_depend>
   <run_depend>cram_memoryaware</run_depend>
   <run_depend>cl_control_primitives</run_depend>
