@@ -28,13 +28,92 @@
 
 (in-package :cram-longterm-pickandplace)
 
+(defvar *loc-on-kitchen-island* nil)
+(defvar *loc-on-sink-block* nil)
+(defvar *loc-on-cupboard* nil)
+(defvar *pancake-mix* nil)
+
 (defparameter *wait-for-trigger* nil)
 
-(defmacro with-themed-environment (theme &body body)
-  `(with-process-modules
-     (prepare-settings)
-     (with-theme ,theme
+(defmacro try-forever (&body body)
+  `(cpl:with-failure-handling
+       (((or cram-plan-failures:object-not-found
+             cram-plan-failures:manipulation-failure
+             cram-plan-failures:location-not-reached-failure) (f)
+          (declare (ignore f))
+          (cpl:retry)))
+     ,@body))
+
+(defmacro try-n-times (n &body body)
+  `(cpl:with-retry-counters ((retry-count ,n))
+     (cpl:with-failure-handling
+         (((or cram-plan-failures:object-not-found
+               cram-plan-failures:manipulation-failure
+               cram-plan-failures:location-not-reached-failure) (f)
+            (declare (ignore f))
+            (cpl:do-retry retry-count
+              (cpl:retry))))
        ,@body)))
+
+(defun publish-pose (pose &optional (topic "/object"))
+  (let ((adv (roslisp:advertise topic "geometry_msgs/PoseStamped")))
+    (roslisp:publish adv (tf:pose-stamped->msg pose))))
+
+(defun set-locations ()
+  (setf *loc-on-kitchen-island*
+        (make-designator
+         'location
+         `((desig-props:on Cupboard)
+           (desig-props:name "kitchen_island"))))
+  (setf *loc-on-sink-block*
+        (make-designator
+         'location
+         `((desig-props:on Cupboard)
+           (desig-props:name "kitchen_sink_block"))))
+  (setf *loc-on-cupboard*
+        (make-designator
+         'location
+         `((desig-props:on Cupboard)))))
+
+(defun prob-prop (symbol values threshold &key dont-list-wrap)
+  "With the probability `threshold', a property key/value pair with the key `symbol' and a value from the list `values' is generated. Each entry of `values' is either a symbol, or a cons cell contanining the value symbol and its individual occurrence probability. If `threshold' is not reached, `NIL' is returned.
+  
+  A sample call to `prob-prop' looks like this:
+  
+  (prob-prop 'color
+             `(red (blue 0.1) green yellow white)
+             0.4)
+  
+  Which translates to: With 40% probability, generate the property `color', containing one of the values `red', `blue', `yellow', or `white'. The relative occurrence each value is 1/4.1, except for blue, which occurs with a relative probability of 0.1/4.1."
+  (when (<= (random 1.0) threshold)
+    (let* ((values-span
+             (reduce (lambda (list-so-far new-entry)
+                       (append list-so-far
+                               `(,(cons
+                                   (car new-entry)
+                                   (+ (cdr new-entry)
+                                      (cond ((> (length list-so-far) 0)
+                                             (cdr (car (last list-so-far))))
+                                            (t 0)))))))
+                     (mapcar (lambda (value)
+                               (cond ((listp value)
+                                      (cons (car value)
+                                            (cadr value)))
+                                     (t (cons value 1.0))))
+                             values)
+                     :initial-value nil))
+           (decided-prob (random (cdar (last values-span))))
+           (decided-value (reduce (lambda (x y)
+                                    (cond ((or
+                                            (not x)
+                                            (< (cdr x) decided-prob (cdr y)))
+                                           y)
+                                          (t x)))
+                                  values-span
+                                  :initial-value nil)))
+      (cond (dont-list-wrap
+             `(,symbol ,(car decided-value)))
+            (t `((,symbol ,(car decided-value))))))))
 
 (defmacro perceive-a (object &key stationary (move-head t))
   `(cpl:with-failure-handling

@@ -72,9 +72,23 @@
              (:file "sem-map-config" :depends-on ("package"))
              (:file "facts" :depends-on ("package"))
              (:file "sampler" :depends-on ("package"))
+             (:file "paper-experiments" :depends-on ("package"
+                                                     "utils"
+                                                     "costmap-metadata"
+                                                     "sem-map-config"
+                                                     "facts"
+                                                     "sampler"))
+             (:file "playground" :depends-on ("package"
+                                              "utils"
+                                              "costmap-metadata"
+                                              "sem-map-config"
+                                              "facts"
+                                              "sampler"))
              (:file "longterm" :depends-on ("package"
                                             "utils"
                                             "costmap-metadata"
                                             "sem-map-config"
                                             "facts"
-                                            "sampler"))))))
+                                            "sampler"
+                                            "paper-experiments"
+                                            "playground"))))))
