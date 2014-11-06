@@ -132,11 +132,3 @@
     (costmap-add-function access-restriction-distribution
                           (make-access-restriction-cost-function)
                           ?cm)))
-
-(def-top-level-cram-function new-perception-interface (&key (types nil))
-  (let ((results (robosherlock-pm::perceive
-                  (cram-designators:make-designator 'object nil))))
-    (cond (types
-           (dolist (result results)
-             (format t "~a~%" (desig-prop-value result 'desig-props::type))))
-          (t results))))
