@@ -115,15 +115,6 @@
 (def-top-level-cram-function empty-one ()
   )
 
-(defun run-experiments (&key (amount 10))
-  (loop for i from 0 below amount
-        do (model-plan)
-           (sleep 0.1)
-           (beliefstate:extract-files)
-           (sleep 0.1)
-           (beliefstate::start-new-experiment)
-           (sleep 3.0)))
-
 (def-top-level-cram-function artif-wfh-case ()
   (let ((failed nil))
     (cpl:with-failure-handling
@@ -426,5 +417,6 @@
   (with-designators ((obj-1 (object `()))
                      (obj-2 (object `()))
                      (obj-3 (object `())))
+    (declare (ignorable obj-1 obj-2 obj-3))
     (with-designators ((obj-4 (object `())))
       (equate obj-3 obj-4))))
