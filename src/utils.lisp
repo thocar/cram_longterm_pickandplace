@@ -388,13 +388,18 @@
       (perform ps-action))))
 
 (defun ensure-arms-up (&optional side)
-  (let ((ignore-collisions nil))
-    (cpl:with-failure-handling
-        ((cram-plan-failures:manipulation-failure (f)
-           (declare (ignore f))
-           (setf ignore-collisions t)
-           (cpl:retry)))
-      (move-arms-up :side side :ignore-collisions ignore-collisions))))
+  (cond ((listp side)
+         (dolist (s side)
+           (ensure-arms-up s)))
+        (t
+         (let ((ignore-collisions nil))
+           (cpl:with-failure-handling
+               ((cram-plan-failures:manipulation-failure (f)
+                  (declare (ignore f))
+                  (setf ignore-collisions t)
+                  (cpl:retry)))
+             (move-arms-up :side side
+                           :ignore-collisions ignore-collisions))))))
 
 (defun renew-collision-environment ()
   (moveit:clear-collision-environment)
