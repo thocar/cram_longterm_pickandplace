@@ -48,10 +48,10 @@ the function."
                         'object
                         (append (prob-prop 'desig-props::type
                                            `(desig-props::pancakemix
-                                             desig-props::dinnerplate
-                                             desig-props::muesli
-                                             (desig-props::ketchup 0.2))
-                                           0.8)
+                                             (desig-props::dinnerplate 0.1)
+                                             (desig-props::muesli 0.1)
+                                             (desig-props::ketchup 0.1))
+                                           1.0)
                                 (prob-prop 'desig-props::color
                                            `(desig-props::red
                                              (desig-props::blue 0.1)
@@ -60,10 +60,10 @@ the function."
                                              desig-props::white)
                                            0.4)
                                 (prob-prop 'desig-props::shape
-                                           `(desig-props::round
-                                             desig-props::flat
-                                             desig-props::box)
-                                           0.2)
+                                          `(desig-props::round
+                                            desig-props::flat
+                                            desig-props::box)
+                                          0.2)
                                 `((desig-props:at
                                    ,(generate-environment-location)))))
           when (or (not filter-function)
@@ -88,14 +88,26 @@ the function."
                   (eql color 'white)
                   (eql shape 'flat))))))
 
-(def-top-level-cram-function perform-generated-task ()
-  (beliefstate:enable-logging nil)
-  (prepare-settings)
+(defun invalid-common-object-filter-function (object)
+  (let ((type (desig-prop-value object 'type))
+        (color (desig-prop-value object 'color))
+        (shape (desig-prop-value object 'shape)))
+    (declare (ignorable type color shape))
+    (not (or (and (eql type 'pancakemix))
+             (and (eql type 'spatula))))))
+
+(def-top-level-cram-function perform-generated-task
+    (&key (arms `(:left :right)) (prepare-settings nil))
+  (when prepare-settings
+    (beliefstate:enable-logging nil)
+    (prepare-settings))
   (beliefstate:enable-logging t)
   (with-process-modules
-    (ensure-arms-up)
+    (ensure-arms-up arms)
     (try-forever
-      (let* ((object (generate-object-acted-on)))
+      (let* ((object (generate-object-acted-on
+                      :filter-function
+                      #'invalid-common-object-filter-function)))
         (try-n-times 3
           (pick-object object))
         (try-forever
@@ -103,7 +115,7 @@ the function."
             (try-n-times 3
               (place-object object location))))))))
 
-(def-top-level-cram-function longterm (&optional (runs 1))
+(def-top-level-cram-function longterm (&key (runs 1))
   (with-process-modules
     (loop for i from 0 below runs
           do (ensure-arms-up)
@@ -112,16 +124,33 @@ the function."
                (prepare-settings)
                (beliefstate:enable-logging t)
                (let* ((possible-putdown-locations
-                        `(,*loc-on-sink-block*
+                        `(;,*loc-on-sink-block*
                           ,*loc-on-kitchen-island*))
                       (object *pancake-mix*)
                       (loc-target
                         (nth (random
                               (length possible-putdown-locations))
                              possible-putdown-locations)))
-                 ;(perceive-scene)
                  (pick-object object)
                  (place-object object loc-target))))))
+
+(defun set-objects ()
+  (setf *pancake-mix*
+        (make-designator
+         'object
+         `((desig-props:at ,*loc-on-kitchen-island*)
+           (desig-props::type desig-props::pancakemix)
+           (desig-props::max-handles 1)
+           ,@(mapcar
+              (lambda (handle-object)
+                `(desig-props:handle ,handle-object))
+              (make-handles
+               0.04
+               :segments 2
+               :offset-angle (/ pi 2)
+               :ax (/ pi 2)
+               :center-offset
+               (tf:make-3d-vector 0.02 0.0 0.0)))))))
 
 (def-top-level-cram-function table-setting ()
   (with-process-modules
