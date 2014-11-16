@@ -30,56 +30,31 @@
 (defun make-area-restriction-cost-function ()
   (let ((min-x -1.0)
         (max-x 1.5)
-        (min-y 0.25)
+        (min-y 0.5)
         (max-y 1.7))
     (lambda (x y)
       (if (and (>= x min-x)
                (<= x max-x)
                (>= y min-y)
                (<= y max-y))
-          1.0d0
+          (if (> x 0.25)
+              (if (< y 1.0)
+                  1.0d0
+                  0.0d0)
+              1.0d0)
           0.0d0))))
-  ;; (let ((min-x -1.1)
-  ;;       (min-y -0.95)
-  ;;       (max-x  1.7)
-  ;;       (max-y  2.7)
-  ;;       (sink-block-min-y 0.0)
-  ;;       (sink-block-max-y 2.0))
-  ;;   (lambda (x y)
-  ;;     (if (> x max-x)
-  ;;         0.0d0 ;; Invalid due to too large x
-  ;;         (if (and (> x 0.0)
-  ;;                  (> y min-y)
-  ;;                  (< y sink-block-max-y)
-  ;;                  (> y sink-block-min-y))
-  ;;             1.0d0 ;; Valid region on sink block
-  ;;             (if (and (<= x 0.0) ;; Other side of kitchen
-  ;;                      (> x min-x)
-  ;;                      (> y min-y)
-  ;;                      (< y max-y))
-  ;;                 (if (> y 0.4) ;; On kitchen island side
-  ;;                     (if (and (< x -0.6) ;; Lower boundary for kitchen island
-  ;;                              (> x -0.7))
-  ;;                         0.0d0
-  ;;                         (if (and (> y 0.65)
-  ;;                                  (< y 0.8))
-  ;;                             1.0d0
-  ;;                             0.0d0))
-  ;;                     (if (and (< x -0.6) ;; Lower boundary for pancake table
-  ;;                              (> x -0.95))
-  ;;                         0.0d0
-  ;;                         1.0d0))
-  ;;                 0.0d0)))))
 
 (defmethod costmap-generator-name->score ((name (common-lisp:eql 'area-restriction-distribution)))
-  7)
+  77)
 
 (def-fact-group demo-costmap-desigs (desig-costmap)
 
   (<- (desig-costmap ?desig ?cm)
+    (format "Test1~%")
     (or (desig-prop ?desig (desig-props:to desig-props:see))
         (desig-prop ?desig (desig-props:to desig-props:reach))
-        (desig-prop ?desig (desig-props:on ?_)))
+        (desig-prop ?desig (desig-props:on ?_))) 
+    (format "Test2~%")
     (costmap ?cm)
     (costmap-add-function area-restriction-distribution
                           (make-area-restriction-cost-function)

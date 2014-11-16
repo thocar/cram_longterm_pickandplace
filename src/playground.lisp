@@ -108,7 +108,8 @@
                                (> x -0.95))
                           0.0d0
                           1.0d0))
-                  0.0d0))))))
+                  0.0d0)))
+      1.0d0)))
 
 (defmethod costmap-generator-name->score ((name (common-lisp:eql 'area-restriction-distribution)))
   107)

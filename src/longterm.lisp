@@ -116,29 +116,49 @@ the function."
               (place-object object location))))))))
 
 (def-top-level-cram-function longterm (&key (runs 1))
+  (beliefstate:enable-logging nil)
+  (prepare-settings)
+  (beliefstate:enable-logging t)
   (with-process-modules
     (loop for i from 0 below runs
           do (ensure-arms-up)
              (try-forever
-               (beliefstate:enable-logging nil)
-               (prepare-settings)
-               (beliefstate:enable-logging t)
-               (let* ((possible-putdown-locations
-                        `(;,*loc-on-sink-block*
-                          ,*loc-on-kitchen-island*))
-                      (object *pancake-mix*)
-                      (loc-target
-                        (nth (random
-                              (length possible-putdown-locations))
-                             possible-putdown-locations)))
+               (set-locations)
+               (set-objects)
+               (let* ((object *pancake-mix*)
+                      (putdown-location *loc-on-kitchen-island*))
                  (pick-object object)
-                 (place-object object loc-target))))))
+                 (place-object object putdown-location))))))
+
+(def-top-level-cram-function set-table ()
+  (beliefstate:enable-logging nil)
+  (prepare-settings)
+  (beliefstate:enable-logging t)
+  (set-scene-1)
+  (with-process-modules
+    (let ((required-objects (required-scene-objects)))
+      (dolist (required-object required-objects)
+        (with-designators ((object (object
+                                    `((desig-props:at
+                                       ,(make-designator
+                                         'location
+                                         `((desig-props::on Cupboard)
+                                           (desig-props::name "kitchen_sink_block"))))
+                                      ,@(remove 'at (desig:properties required-object)
+                                                :key #'car))))
+                           (location (location
+                                      (description (desig-prop-value
+                                                    required-object 'at)))))
+          (ensure-arms-up)
+          (try-forever
+            (pick-object object)
+            (place-object object location)))))))
 
 (defun set-objects ()
   (setf *pancake-mix*
         (make-designator
          'object
-         `((desig-props:at ,*loc-on-kitchen-island*)
+         `((desig-props:at ,*loc-on-sink-block*);,*loc-on-kitchen-island*)
            (desig-props::type desig-props::pancakemix)
            (desig-props::max-handles 1)
            ,@(mapcar

@@ -387,7 +387,7 @@
                                             (desig-props:obj desig-props:scene)))))
       (perform ps-action))))
 
-(defun ensure-arms-up (&optional side)
+(defun ensure-arms-up (&optional (side (list :left :right)))
   (cond ((listp side)
          (dolist (s side)
            (ensure-arms-up s)))
@@ -448,7 +448,13 @@
       (roslisp:unsubscribe subscriber))
     (roslisp:ros-info (demo-control) "External trigger arrived.")))
 
-(def-fact-group object-refinement-facts (infer-object-property)
+(defun object-color (colors color)
+  (let ((color-pair (find color colors :test (lambda (x y) (eql x (car y))))))
+    (if color-pair
+        (cadr color-pair)
+        0.0d0)))
+
+(def-fact-group object-refinement-facts (infer-object-property object-handle)
   
   (<- (make-handles ?segments ?offset-angle ?handles)
     (symbol-value pi ?pi)
@@ -473,48 +479,41 @@
   
   (<- (type-property desig-props:pot desig-props::lid t))
   
+  (<- (object-color ?object ?color ?value)
+    (desig-prop ?object (desig-props:color ?colors))
+    (crs:lisp-fun object-color ?colors ?color ?value))
+  
   (<- (infer-object-property ?object ?key ?value)
     (desig-prop ?object (desig-props:type ?type))
     (type-property ?type ?key ?value))
   
-  (<- (infer-object-property ?object ?key ?value)
-    (desig-prop ?object (desig-props:color desig-props::blue))
-    (equal ?key desig-props::owner)
-    (equal ?value "Jan"))
-  
   (<- (infer-object-property ?object desig-props:type desig-props::pancakemix)
-    (desig-prop ?object (desig-props:color (desig-props::red ?red)))
-    (desig-prop ?object (desig-props:color (desig-props::yellow ?yellow)))
-    (desig-prop ?object (desig-props:color (desig-props::blue ?blue)))
-    (desig-prop ?object (desig-props:color (desig-props::white ?white)))
+    (desig-prop ?object (desig-props:color ((desig-props::red ?red))))
+    (desig-prop ?object (desig-props:color ((desig-props::yellow ?yellow))))
+    (desig-prop ?object (desig-props:color ((desig-props::blue ?blue))))
+    (desig-prop ?object (desig-props:color ((desig-props::white ?white))))
     (< ?red 0.5)
-    (< ?blue 0.1)
-    (< ?white 0.4)
+    (< ?blue 0.5)
+    (< ?white 0.6)
     (> ?yellow 0.1))
-
+  
+  (<- (infer-object-property ?object desig-props:type desig-props::bowl)
+    (object-color ?object desig-props:white ?white)
+    (> ?white 0.7))
+  
+  (<- (infer-object-property ?object desig-props:type desig-props::muesli)
+    (object-color ?object desig-props:yellow ?yellow)
+    (object-color ?object desig-props:red ?red)
+    (> ?yellow 0.3)
+    (> ?red 0.2))
+  
+  (<- (infer-object-property ?object desig-props:type desig-props::milkbox)
+    (object-color ?object desig-props:yellow ?yellow)
+    (> ?yellow 0.1))
+  
   (<- (infer-object-property ?object desig-props:type desig-props::dinnerplate)
     (desig-prop ?object (desig-props:color (desig-props::white ?white)))
     (> ?white 0.8))
-  
-  (<- (infer-object-property ?object desig-props:type desig-props::muesli)
-    (desig-prop ?object (desig-props:color (desig-props::red ?red)))
-    (desig-prop ?object (desig-props:color (desig-props::yellow ?yellow)))
-    (desig-prop ?object (desig-props:color (desig-props::blue ?blue)))
-    (desig-prop ?object (desig-props:color (desig-props::white ?white)))
-    (> ?red 0.5)
-    (> ?yellow 0.15)
-    (< ?blue 0.1)
-    (< ?white 0.1))
-  
-  (<- (infer-object-property ?object desig-props:type desig-props::milkbox)
-    (desig-prop ?object (desig-props:color (desig-props::red ?red)))
-    (desig-prop ?object (desig-props:color (desig-props::yellow ?yellow)))
-    (desig-prop ?object (desig-props:color (desig-props::white ?white)))
-    (desig-prop ?object (desig-props:color (desig-props::blue ?blue)))
-    (> ?white 0.4)
-    (> ?blue 0.0)
-    (< ?yellow 0.3)
-    (< ?red 0.2))
   
   (<- (infer-object-property ?object desig-props:handle ?handle)
     (infer-object-property ?object desig-props:type ?type)
@@ -542,12 +541,20 @@
     (crs:lisp-fun / ?pi -2.5 ?pi-half)
     (make-handles -0.07 8 ?pi-half 'desig-props::push ?pi ?tilt 0 0 0 -0.015 ?handles-list))
 
+  (<- (object-handle desig-props::bowl ?handles-list)
+    (symbol-value pi ?pi)
+    (crs:lisp-fun / ?pi 4 ?tilt)
+    (crs:lisp-fun / ?pi -2.5 ?pi-half)
+    (make-handles -0.015 4 ?pi-half 'desig-props::push ?pi ?tilt 0 0.1 0.0 -0.0 ?handles-list))
+
   (<- (infer-object-property ?object desig-props::carry-handles ?carry-handles)
     (infer-object-property ?object desig-props:type ?type)
     (object-carry-handles ?type ?carry-handles))
   
   ;; Dinnerplate: Carry with 2 arms
-  (<- (object-carry-handles desig-props::dinnerplate 2))
+  ;(<- (object-carry-handles desig-props::dinnerplate 2))
+  ;; Bowl: Carry with 1 arm
+  (<- (object-carry-handles desig-props::bowl 1))
   ;; Muesli: Carry with 1 arm
   (<- (object-carry-handles desig-props::muesli 1))
   ;; Milkbox: Carry with 1 arm

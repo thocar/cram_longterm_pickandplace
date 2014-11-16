@@ -1,5 +1,3 @@
-; -*- Mode: Lisp; Syntax: ANSI-Common-Lisp; Base: 10 -*-
-
 ;;; Copyright (c) 2014, Jan Winkler <winkler@cs.uni-bremen.de>
 ;;; All rights reserved.
 ;;;
@@ -84,6 +82,12 @@
                                               "sem-map-config"
                                               "facts"
                                               "sampler"))
+             (:file "table-setting" :depends-on ("package"
+                                                 "utils"
+                                                 "costmap-metadata"
+                                                 "sem-map-config"
+                                                 "facts"
+                                                 "sampler"))
              (:file "longterm" :depends-on ("package"
                                             "utils"
                                             "costmap-metadata"
@@ -91,4 +95,5 @@
                                             "facts"
                                             "sampler"
                                             "paper-experiments"
-                                            "playground"))))))
+                                            "playground"
+                                            "table-setting"))))))

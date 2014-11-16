@@ -44,7 +44,9 @@
                 desig-prop
                 action-desig)
   (:import-from :robosherlock-process-module
-                infer-object-property)
+                infer-object-property
+                perceived-object-invalid
+                object-handle)
   (:import-from :cram-language-designator-support with-designators)
   (:import-from :cram-language def-cram-function def-top-level-cram-function)
   (:import-from :cram-reasoning def-fact-group <- not)
@@ -53,4 +55,5 @@
                      #:scene #:dinnerplate #:shape #:name #:on
                      #:pancakemix #:flat #:box #:muesli
                      #:ketchup #:color #:yellow #:red #:blue
-                     #:green #:white))
+                     #:green #:white #:seat #:near #:left-of
+                     #:right-of #:behind-of #:center-of #:bowl))
