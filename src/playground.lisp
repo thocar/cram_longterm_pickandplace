@@ -42,16 +42,21 @@
                  (when (string= val "q")
                    (return-from ret))
                  (let ((gripper-pose
-                         (moveit:ensure-pose-stamped-transformed
+                         (cl-tf2:ensure-pose-stamped-transformed
                           (tf:pose->pose-stamped
                            gripper-frame
                            (roslisp:ros-time)
                            (tf:make-identity-pose))
-                          "/map" :ros-time t)))
+                          "/map" :use-current-ros-time t)))
                    (push
                     gripper-pose
                     gripper-poses)))))
     gripper-poses))
+
+(plan-lib::declare-goal parameters-logged (action object))
+
+(plan-lib::def-goal (achieve (parameters-logged ?action ?object))
+  (format t "Got:~%~a~%~a~%" ?action ?object))
 
 (defun avoid-collision-environment-validator (desig pose)
   (let ((to (desig-prop-value desig 'desig-props:to)))

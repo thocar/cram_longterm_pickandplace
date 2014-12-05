@@ -355,13 +355,13 @@
      ,@body))
 
 (defun get-robot-pose ()
-  (moveit:ensure-pose-stamped-transformed
+  (cl-tf2:ensure-pose-stamped-transformed
    (tf:make-pose-stamped
     "/base_link"
     0.0
     (tf:make-identity-vector)
     (tf:make-identity-rotation))
-   "/map" :ros-time t))
+   "/map" :use-current-ros-time t))
 
 (defun drive-to-pose (pose-stamped)
   (block nav
@@ -488,14 +488,10 @@
     (type-property ?type ?key ?value))
   
   (<- (infer-object-property ?object desig-props:type desig-props::pancakemix)
-    (desig-prop ?object (desig-props:color ((desig-props::red ?red))))
-    (desig-prop ?object (desig-props:color ((desig-props::yellow ?yellow))))
-    (desig-prop ?object (desig-props:color ((desig-props::blue ?blue))))
-    (desig-prop ?object (desig-props:color ((desig-props::white ?white))))
-    (< ?red 0.5)
-    (< ?blue 0.5)
-    (< ?white 0.6)
-    (> ?yellow 0.1))
+    (object-color ?object desig-props:yellow ?yellow)
+    (object-color ?object desig-props:red ?red)
+    (> ?yellow 0.5)
+    (> ?red 0.1))
   
   (<- (infer-object-property ?object desig-props:type desig-props::bowl)
     (object-color ?object desig-props:white ?white)

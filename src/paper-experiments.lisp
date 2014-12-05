@@ -173,7 +173,7 @@
                        (cram-plan-library::next-solution
                         (desig:current-desig loc)))))
                   ((area) `(,area))
-                  ((robot-pose) `(,(moveit:ensure-pose-stamped-transformed
+                  ((robot-pose) `(,(cl-tf2:ensure-pose-stamped-transformed
                                     (tf:make-pose-stamped
                                      "/base_footprint" 0.0
                                      (tf:make-identity-vector)
