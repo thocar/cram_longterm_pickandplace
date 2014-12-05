@@ -43,6 +43,7 @@
                    (return-from ret))
                  (let ((gripper-pose
                          (cl-tf2:ensure-pose-stamped-transformed
+                          *tf2*
                           (tf:pose->pose-stamped
                            gripper-frame
                            (roslisp:ros-time)

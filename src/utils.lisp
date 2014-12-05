@@ -32,8 +32,14 @@
 (defvar *loc-on-sink-block* nil)
 (defvar *loc-on-cupboard* nil)
 (defvar *pancake-mix* nil)
+(defvar *tf2* nil)
 
 (defparameter *wait-for-trigger* nil)
+
+(defun init-longterm-pickandplace ()
+  (setf *tf2* (make-instance 'cl-tf2:buffer-client)))
+
+(roslisp-utilities:register-ros-init-function init-longterm-pickandplace)
 
 (defmacro try-forever (&body body)
   `(cpl:with-failure-handling
@@ -356,6 +362,7 @@
 
 (defun get-robot-pose ()
   (cl-tf2:ensure-pose-stamped-transformed
+   *tf2*
    (tf:make-pose-stamped
     "/base_link"
     0.0

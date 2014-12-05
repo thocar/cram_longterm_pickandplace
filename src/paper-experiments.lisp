@@ -174,6 +174,7 @@
                         (desig:current-desig loc)))))
                   ((area) `(,area))
                   ((robot-pose) `(,(cl-tf2:ensure-pose-stamped-transformed
+                                    *tf2*
                                     (tf:make-pose-stamped
                                      "/base_footprint" 0.0
                                      (tf:make-identity-vector)

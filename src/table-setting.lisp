@@ -40,7 +40,7 @@
 
 (defun pose-link-origin-distance (pose-stamped link)
   (let ((pose-in-link (cl-tf2:ensure-pose-stamped-transformed
-                       pose-stamped link)))
+                       *tf2* pose-stamped link)))
     (tf:v-dist (tf:origin pose-in-link)
                (tf:make-identity-vector))))
 
