@@ -50,11 +50,9 @@
 (def-fact-group demo-costmap-desigs (desig-costmap)
 
   (<- (desig-costmap ?desig ?cm)
-    (format "Test1~%")
     (or (desig-prop ?desig (desig-props:to desig-props:see))
         (desig-prop ?desig (desig-props:to desig-props:reach))
         (desig-prop ?desig (desig-props:on ?_))) 
-    (format "Test2~%")
     (costmap ?cm)
     (costmap-add-function area-restriction-distribution
                           (make-area-restriction-cost-function)
