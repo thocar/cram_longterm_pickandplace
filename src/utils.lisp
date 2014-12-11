@@ -461,7 +461,12 @@
         (cadr color-pair)
         0.0d0)))
 
-(def-fact-group object-refinement-facts (infer-object-property object-handle)
+(def-fact-group object-refinement-facts (infer-object-property
+                                         object-handle
+                                         cram-language::grasp-effort)
+  
+  (<- (cram-language::grasp-effort ?object 80)
+    (desig-prop ?object (desig-props::is desig-props::fragile)))
   
   (<- (make-handles ?segments ?offset-angle ?handles)
     (symbol-value pi ?pi)
@@ -523,6 +528,16 @@
     (object-handle ?type ?handles-list)
     (member ?handle ?handles-list))
   
+  (<- (infer-object-property ?object desig-props::is desig-props::fragile)
+    (or (desig-prop ?object (desig-props::type desig-props::bowl))
+        (desig-prop ?object (desig-props::type desig-props::dinnerplate))))
+  
+  (<- (infer-object-property ?object desig-props::category desig-props::container)
+    (desig-prop ?object (desig-props::type desig-props::bowl)))
+
+  (<- (infer-object-property ?object desig-props::is desig-props::stackable)
+    (desig-prop ?object (desig-props::type desig-props::dinnerplate)))
+  
   (<- (object-handle desig-props::milkbox ?handles-list)
     (symbol-value pi ?pi)
     (crs:lisp-fun / ?pi 2 ?pi-half)
@@ -555,9 +570,9 @@
     (object-carry-handles ?type ?carry-handles))
   
   ;; Dinnerplate: Carry with 2 arms
-  ;(<- (object-carry-handles desig-props::dinnerplate 2))
-  ;; Bowl: Carry with 1 arm
-  (<- (object-carry-handles desig-props::bowl 1))
+  (<- (object-carry-handles desig-props::dinnerplate 2))
+  ;; Bowl: Carry with 2 arms
+  (<- (object-carry-handles desig-props::bowl 2))
   ;; Muesli: Carry with 1 arm
   (<- (object-carry-handles desig-props::muesli 1))
   ;; Milkbox: Carry with 1 arm
