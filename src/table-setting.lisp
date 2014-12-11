@@ -201,7 +201,29 @@ performing a `mapcar'."
 ;;; Plans
 ;;;
 
-
+(def-top-level-cram-function set-table ()
+  (beliefstate:enable-logging nil)
+  (prepare-settings)
+  (beliefstate:enable-logging t)
+  (set-scene-1)
+  (with-process-modules
+    (let ((required-objects (required-scene-objects)))
+      (dolist (required-object required-objects)
+        (with-designators ((object (object
+                                    `((desig-props:at
+                                       ,(make-designator
+                                         'location
+                                         `((desig-props::on Cupboard)
+                                           (desig-props::name "kitchen_sink_block"))))
+                                      ,@(remove 'at (desig:properties required-object)
+                                                :key #'car))))
+                           (location (location
+                                      (description (desig-prop-value
+                                                    required-object 'at)))))
+          (ensure-arms-up)
+          (try-forever
+            (pick-object object)
+            (place-object object location)))))))
 
 ;;;
 ;;; Facts
