@@ -322,9 +322,9 @@ performing a `mapcar'."
   
   ;; Objects for meals
   (<- (required-meal-object muesli bowl))
-  ;;(<- (required-meal-object muesli muesli))
+  (<- (required-meal-object muesli muesli))
   (<- (required-meal-object muesli milkbox))
-  ;;(<- (required-meal-object muesli spoon))
+  (<- (required-meal-object muesli spoon))
   
   (<- (required-meal-object bread knife))
   (<- (required-meal-object bread plate))
