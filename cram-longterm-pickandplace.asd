@@ -88,6 +88,12 @@
                                                  "sem-map-config"
                                                  "facts"
                                                  "sampler"))
+             (:file "pizza-making" :depends-on ("package"
+                                                "utils"
+                                                "costmap-metadata"
+                                                "sem-map-config"
+                                                "facts"
+                                                "sampler"))
              (:file "longterm" :depends-on ("package"
                                             "utils"
                                             "costmap-metadata"
