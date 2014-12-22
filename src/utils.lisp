@@ -32,14 +32,8 @@
 (defvar *loc-on-sink-block* nil)
 (defvar *loc-on-cupboard* nil)
 (defvar *pancake-mix* nil)
-(defvar *tf2* nil)
 
 (defparameter *wait-for-trigger* nil)
-
-(defun init-longterm-pickandplace ()
-  (setf *tf2* (make-instance 'cl-tf2:buffer-client)))
-
-(roslisp-utilities:register-ros-init-function init-longterm-pickandplace)
 
 (defmacro try-forever (&body body)
   `(cpl:with-failure-handling
@@ -501,9 +495,9 @@
   
   (<- (infer-object-property ?object desig-props:type desig-props::pancakemix)
     (object-color ?object desig-props:yellow ?yellow)
-    (object-color ?object desig-props:red ?red)
-    (> ?yellow 0.5)
-    (> ?red 0.1))
+    (object-color ?object desig-props:white ?white)
+    (> ?yellow 0.3)
+    (> ?white 0.1))
   
   (<- (infer-object-property ?object desig-props:type desig-props::bowl)
     (object-color ?object desig-props:white ?white)
@@ -517,7 +511,9 @@
   
   (<- (infer-object-property ?object desig-props:type desig-props::milkbox)
     (object-color ?object desig-props:yellow ?yellow)
-    (> ?yellow 0.1))
+    (object-color ?object desig-props:green ?green)
+    (> ?yellow 0.1)
+    (> ?green 0.4))
   
   (<- (infer-object-property ?object desig-props:type desig-props::dinnerplate)
     (desig-prop ?object (desig-props:color (desig-props::white ?white)))
@@ -563,7 +559,7 @@
     (symbol-value pi ?pi)
     (crs:lisp-fun / ?pi 4 ?tilt)
     (crs:lisp-fun / ?pi -2.5 ?pi-half)
-    (make-handles -0.015 4 ?pi-half 'desig-props::push ?pi ?tilt 0 0.1 0.0 -0.0 ?handles-list))
+    (make-handles -0.015 4 ?pi-half 'desig-props::push ?pi ?tilt 0 0.0 0.0 -0.0 ?handles-list))
 
   (<- (infer-object-property ?object desig-props::carry-handles ?carry-handles)
     (infer-object-property ?object desig-props:type ?type)
