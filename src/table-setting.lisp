@@ -58,10 +58,6 @@
   (set-scene-detail 'meal-time 'breakfast)
   (set-scene-detail 'week-day 'saturday))
 
-(defun is-weekend (day)
-  (or (eql day 'saturday)
-      (eql day 'sunday)))
-
 (defun rectangular-costmap-generator (x-r y-r w h)
   (lambda (x y)
     (if (and (>= x x-r)
