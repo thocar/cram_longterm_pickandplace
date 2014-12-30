@@ -134,7 +134,7 @@ the function."
   (setf *pancake-mix*
         (make-designator
          'object
-         `((desig-props:at ,*loc-on-kitchen-island*);,*loc-on-sink-block*)
+         `((desig-props:at ,*loc-on-sink-block*);,*loc-on-kitchen-island*)
            (desig-props::type desig-props::pancakemix)
            (desig-props::max-handles 1)
            ,@(mapcar
@@ -144,6 +144,7 @@ the function."
                0.04
                :segments 2
                :ax (/ pi 2)
+               :offset-angle (/ pi 2)
                :center-offset
                (tf:make-3d-vector 0.02 0.0 0.0)))))))
 
@@ -167,3 +168,66 @@ the function."
         (place-object milkbox *loc-on-kitchen-island*)
         (pick-object plate)
         (place-object plate *loc-on-kitchen-island*)))))
+
+(defun split-by-one-space (string)
+  "Returns a list of substrings of string divided by ONE space each.
+Note: Two consecutive spaces will be seen as if there were an empty
+string between them."
+  (loop for i = 0 then (1+ j)
+        as j = (position #\Space string :start i)
+        collect (subseq string i j)
+        while j))
+
+(defun make-location (str)
+  (cond
+    ((string= str "counter")
+     (make-designator
+      'location
+      `((desig-props:on Cupboard)
+        (desig-props:name "kitchen_island"))))
+    ((string= str "sink")
+     (make-designator
+      'location
+      `((desig-props:on Cupboard)
+        (desig-props:name "kitchen_sink_block"))))))
+
+(defun make-object-at (subject loc-str)
+  (let ((loc (make-location loc-str)))
+    (when loc
+      (cond
+        ((string= subject "pancakemix")
+         (make-designator
+          'object
+          `((desig-props:at ,loc)
+            (desig-props:type desig-props:pancakemix)
+            (desig-props::max-handles 1))))))))
+
+(defun newest-non-effective (designator)
+  (cond ((desig:effective designator)
+         (newest-non-effective (parent designator)))
+        (t designator)))
+
+(def-top-level-cram-function ex (sentence)
+  (let ((elements (split-by-one-space sentence)))
+    (when elements
+      (cond
+        ((and (string= (first elements) "move")
+              (string= (third elements) "from")
+              (string= (fifth elements) "to"))
+         (let* ((subject (second elements))
+                (from (fourth elements))
+                (to (sixth elements))
+                (obj (make-object-at subject from))
+                (to-loc (make-location to)))
+           (when (and obj to-loc)
+             (with-process-modules
+               (ensure-arms-up)
+               (try-forever
+                 ;; Rewind the designator to the last, non-effective
+                 ;; one when no object could be found.
+                 (when (desig:effective obj)
+                   (let ((nn-eff (newest-non-effective obj)))
+                     (make-designator
+                      'object (description nn-eff) obj)))
+                 (pick-object obj)
+                 (place-object obj to-loc))))))))))
