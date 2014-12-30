@@ -44,16 +44,16 @@
               1.0d0)
           0.0d0))))
 
-(defmethod costmap-generator-name->score ((name (common-lisp:eql 'area-restriction-distribution)))
+(defmethod costmap-generator-name->score ((name (common-lisp:eql 'area-restriction-distribution2)))
   77)
 
-(def-fact-group demo-costmap-desigs (desig-costmap)
+(def-fact-group demo-costmap-desigs-area-restriction (desig-costmap)
 
   (<- (desig-costmap ?desig ?cm)
     (or (desig-prop ?desig (desig-props:to desig-props:see))
         (desig-prop ?desig (desig-props:to desig-props:reach))
-        (desig-prop ?desig (desig-props:on ?_))) 
+        (desig-prop ?desig (desig-props:on ?_)))
     (costmap ?cm)
-    (costmap-add-function area-restriction-distribution
+    (costmap-add-function area-restriction-distribution2
                           (make-area-restriction-cost-function)
                           ?cm)))
