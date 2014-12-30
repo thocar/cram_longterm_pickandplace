@@ -54,7 +54,8 @@
                     gripper-poses)))))
     gripper-poses))
 
-(plan-lib::declare-goal parameters-logged (action object))
+(plan-lib::declare-goal parameters-logged (action object)
+  (declare (ignorable action object)))
 
 (plan-lib::def-goal (achieve (parameters-logged ?action ?object))
   (format t "Got:~%~a~%~a~%" ?action ?object))
@@ -70,72 +71,72 @@
             (prog1 :reject (format t "I say no~%")))
         (prog1 :unknown (format t "I say unknown~%")))))
 
-(defun make-access-restriction-cost-function ()
-  (let ((min-x -0.9)
-        (min-y -0.95)
-        (max-x  1.5)
-        (max-y  1.4))
-    (lambda (x y)
-      (if (and (>= x min-x)
-               (<= x max-x)
-               (>= y min-y)
-               (<= y max-y))
-          1.0d0
-          0.0d0))))
+;; (defun make-access-restriction-cost-function ()
+;;   (let ((min-x -0.9)
+;;         (min-y -0.95)
+;;         (max-x  1.5)
+;;         (max-y  1.4))
+;;     (lambda (x y)
+;;       (if (and (>= x min-x)
+;;                (<= x max-x)
+;;                (>= y min-y)
+;;                (<= y max-y))
+;;           1.0d0
+;;           0.0d0))))
 
-(defun make-area-restriction-cost-function ()
-  (let ((min-x -0.9)
-        (min-y -0.95)
-        (max-x  1.5)
-        (max-y  1.7)
-        (sink-block-min-y 0.0)
-        (sink-block-max-y 1.0))
-    (lambda (x y)
-      (if (> x max-x)
-          0.0d0 ;; Invalid due to too large x
-          (if (and (> x 0.0)
-                   (> y min-y)
-                   (< y sink-block-max-y)
-                   (> y sink-block-min-y))
-              1.0d0 ;; Valid region on sink block
-              (if (and (<= x 0.0) ;; Other side of kitchen
-                       (> x min-x)
-                       (> y min-y)
-                       (< y max-y))
-                  (if (> y 0.4) ;; On kitchen island side
-                      (if (and (< x -0.6) ;; Lower boundary for kitchen island
-                               (> x -0.7))
-                          0.0d0
-                          (if (and (> y 0.65)
-                                   (< y 2.5))
-                              1.0d0
-                              0.0d0))
-                      (if (and (< x -0.6) ;; Lower boundary for pancake table
-                               (> x -0.95))
-                          0.0d0
-                          1.0d0))
-                  0.0d0)))
-      1.0d0)))
+;; (defun make-area-restriction-cost-function ()
+;;   (let ((min-x -0.9)
+;;         (min-y -0.95)
+;;         (max-x  1.5)
+;;         (max-y  1.7)
+;;         (sink-block-min-y 0.0)
+;;         (sink-block-max-y 1.0))
+;;     (lambda (x y)
+;;       (if (> x max-x)
+;;           0.0d0 ;; Invalid due to too large x
+;;           (if (and (> x 0.0)
+;;                    (> y min-y)
+;;                    (< y sink-block-max-y)
+;;                    (> y sink-block-min-y))
+;;               1.0d0 ;; Valid region on sink block
+;;               (if (and (<= x 0.0) ;; Other side of kitchen
+;;                        (> x min-x)
+;;                        (> y min-y)
+;;                        (< y max-y))
+;;                   (if (> y 0.4) ;; On kitchen island side
+;;                       (if (and (< x -0.6) ;; Lower boundary for kitchen island
+;;                                (> x -0.7))
+;;                           0.0d0
+;;                           (if (and (> y 0.65)
+;;                                    (< y 2.5))
+;;                               1.0d0
+;;                               0.0d0))
+;;                       (if (and (< x -0.6) ;; Lower boundary for pancake table
+;;                                (> x -0.95))
+;;                           0.0d0
+;;                           1.0d0))
+;;                   0.0d0)))
+;;       1.0d0)))
 
-(defmethod costmap-generator-name->score ((name (common-lisp:eql 'area-restriction-distribution)))
-  107)
+;; (defmethod costmap-generator-name->score ((name (common-lisp:eql 'area-restriction-distribution)))
+;;   107)
 
-(defmethod costmap-generator-name->score ((name (common-lisp:eql 'access-restriction-distribution)))
-  108)
+;; (defmethod costmap-generator-name->score ((name (common-lisp:eql 'access-restriction-distribution)))
+;;   108)
 
-(def-fact-group demo-costmap-desigs (desig-costmap)
+;; (def-fact-group demo-costmap-desigs (desig-costmap)
 
-  (<- (desig-costmap ?desig ?cm)
-    (desig-prop ?desig (desig-props:on ?_))
-    (costmap ?cm)
-    (costmap-add-function area-restriction-distribution
-                          (make-area-restriction-cost-function)
-                          ?cm))
+;;   (<- (desig-costmap ?desig ?cm)
+;;     (desig-prop ?desig (desig-props:on ?_))
+;;     (costmap ?cm)
+;;     (costmap-add-function area-restriction-distribution
+;;                           (make-area-restriction-cost-function)
+;;                           ?cm))
 
-  (<- (desig-costmap ?desig ?cm)
-    (or (desig-prop ?desig (desig-props:to desig-props:see))
-        (desig-prop ?desig (desig-props:to desig-props:reach)))
-    (costmap ?cm)
-    (costmap-add-function access-restriction-distribution
-                          (make-access-restriction-cost-function)
-                          ?cm)))
+;;   (<- (desig-costmap ?desig ?cm)
+;;     (or (desig-prop ?desig (desig-props:to desig-props:see))
+;;         (desig-prop ?desig (desig-props:to desig-props:reach)))
+;;     (costmap ?cm)
+;;     (costmap-add-function access-restriction-distribution
+;;                           (make-access-restriction-cost-function)
+;;                           ?cm)))

@@ -185,7 +185,7 @@
          (ensure-arms-up side)))))
 
 (defmacro open-container (container)
-  )
+  (declare (ignore container)))
 
 (defun container-for (object)
   (let* ((at (desig-prop-value object 'desig-props:at))
@@ -312,6 +312,7 @@
                              ?w btr:semantic-map sem-map-kitchen
                              (,scene-trans ,scene-rot)
                              :urdf ,urdf-kitchen))))))))
+    (declare (ignore test-0 test-01 test-02 test-03 test-1))
     (ros-info (bullet) "Check binding for robot")
     (var-value
      '?pr2
@@ -329,6 +330,8 @@
     (robosherlock-pm::ignore-bullet-object 'sem-map-kitchen)
     (robosherlock-pm::ignore-bullet-object 'common-lisp::floor)
     (robosherlock-pm::ignore-bullet-object 'cram-pr2-knowledge::pr2)))
+
+(defgeneric init-belief-state-temp ())
 
 (defmethod init-belief-state-temp ()
   (crs:prolog

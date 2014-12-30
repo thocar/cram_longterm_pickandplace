@@ -116,9 +116,9 @@ the function."
               (place-object object location))))))))
 
 (def-top-level-cram-function longterm (&key (runs 1))
-  (beliefstate:enable-logging nil)
-  (prepare-settings)
-  (beliefstate:enable-logging t)
+  ;(beliefstate:enable-logging nil)
+  ;(prepare-settings)
+  ;(beliefstate:enable-logging t)
   (with-process-modules
     (loop for i from 0 below runs
           do (ensure-arms-up)
@@ -143,7 +143,6 @@ the function."
               (make-handles
                0.04
                :segments 2
-               :offset-angle (/ pi 2)
                :ax (/ pi 2)
                :center-offset
                (tf:make-3d-vector 0.02 0.0 0.0)))))))

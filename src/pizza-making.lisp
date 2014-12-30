@@ -95,6 +95,8 @@
 ;;; Plans
 ;;;
 
+(defgeneric articulate-environment (indicator location))
+
 (defmethod articulate-environment (indicator (location location-designator))
   (ros-info (pizza-making) "Articulating location ~a (~a)"
             location indicator))

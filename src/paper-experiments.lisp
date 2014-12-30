@@ -29,32 +29,29 @@
 (in-package :cram-longterm-pickandplace)
 
 (def-top-level-cram-function model-tasks ()
-  (cpl:with-retry-counters ((manip-cnt 5)
-                            (loc-cnt 3))
-    (cpl:with-failure-handling
-        ((cram-plan-failures:manipulation-failure (f)
-           (declare (ignore f))
-           (ros-info
-            (model-tasks) "Top-level manipulation failure")
-           ;(cpl:do-retry manip-cnt
-             (cpl:retry))
-         (cram-plan-failures:location-not-reached-failure (f)
-           (declare (ignore f))
-           (ros-info
-            (model-tasks) "Top-level location failure")
-           ;(cpl:do-retry loc-cnt
-             (cpl:retry)))
-      (with-designators ((param-1 (action `()))
-                         (param-2 (object `()))
-                         (param-3 (location `())))
-        (declare (ignore param-1))
-        (when (random 2)
-          (subtask-1 param-2 param-3))
-        (subtask-2 param-2)))))
+  (cpl:with-failure-handling
+      ((cram-plan-failures:manipulation-failure (f)
+         (declare (ignore f))
+         (ros-info
+          (model-tasks) "Top-level manipulation failure")
+         (cpl:retry))
+       (cram-plan-failures:location-not-reached-failure (f)
+         (declare (ignore f))
+         (ros-info
+          (model-tasks) "Top-level location failure")
+         (cpl:retry)))
+    (with-designators ((param-1 (action `()))
+                       (param-2 (object `()))
+                       (param-3 (location `())))
+      (declare (ignore param-1))
+      (when (random 2)
+        (subtask-1 param-2 param-3))
+      (subtask-2))))
 
-(def-cram-function subtask-1 (object location))
+(def-cram-function subtask-1 (object location)
+  (format t "~a ~a~%" object location))
 
-(def-cram-function subtask-2 (object)
+(def-cram-function subtask-2 ()
   (beliefstate::annotate-parameters `((navigate-to-x ,(random 10))
                                       (navigate-to-y ,(random 10))
                                       (navigate-to-z ,(random 10))))
@@ -68,21 +65,21 @@
              (cpl:retry))))
       (let ((d-val (random 4)))
         (case d-val
-          (0 (subtask-4 object nil))
-          (1 (subtask-3 nil))
+          (0 (subtask-4))
+          (1 (subtask-3))
           (2 (cpl:fail 'cram-plan-failures:location-not-reached-failure))
           (3 (cpl:fail 'cram-plan-failures:manipulation-failure)))))))
 
 (def-cram-function subtask-extra ()
   )
 
-(def-cram-function subtask-3 (location)
+(def-cram-function subtask-3 ()
   ;(subtask-extra)
   (let ((d-val (random 2)))
     (case d-val
       (0 (cpl:fail 'cram-plan-failures:location-not-reached-failure)))))
 
-(def-cram-function subtask-4 (object location)
+(def-cram-function subtask-4 ()
   (let ((d-val (random 3)))
     (case d-val
       (0 (cpl:fail 'cram-plan-failures:location-not-reached-failure))
@@ -100,6 +97,7 @@
 
 (def-top-level-cram-function linear-model-task ()
   (with-designators ((action (action `())))
+    (declare (ignorable action))
     (linear-model-task-1))
   (linear-model-task-2))
 
@@ -110,7 +108,8 @@
   (linear-model-task-2))
 
 (def-cram-function linear-model-task-2 ()
-  (with-designators ((action (action `())))))
+  (with-designators ((action (action `())))
+    (declare (ignore action))))
 
 (def-top-level-cram-function empty-one ()
   )
@@ -207,6 +206,7 @@
                                            "/map" 0.0
                                            (tf:make-3d-vector 1 2 3)
                                            (tf:make-identity-rotation)))))))
+      (declare (ignorable loc))
       (let ((i 0))
         (loop while (< i trials)
               do (cpl:with-failure-handling
