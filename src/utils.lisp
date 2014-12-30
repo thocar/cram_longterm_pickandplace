@@ -385,6 +385,11 @@
       (cram-plan-library:perceive-object
        'cram-plan-library:currently-visible obj))))
 
+(def-top-level-cram-function see-object-desig (designator)
+  (with-process-modules
+    (cram-plan-library:perceive-object
+     'cram-plan-library:currently-visible designator)))
+
 (def-top-level-cram-function see-scene ()
   (with-process-modules
     (with-designators ((ps-action (action `((desig-props:to desig-props:perceive)
@@ -523,7 +528,9 @@
     (> ?white 0.8))
   
   (<- (infer-object-property ?object desig-props:handle ?handle)
-    (infer-object-property ?object desig-props:type ?type)
+    (crs:once
+     (or (desig-prop ?object (desig-props:type ?type))
+         (infer-object-property ?object desig-props:type ?type)))
     (object-handle ?type ?handles-list)
     (member ?handle ?handles-list))
   
