@@ -29,6 +29,23 @@
 (in-package :cram-longterm-pickandplace)
 
 ;;;
+;;; Note
+;;;
+
+;; Planned experiment elements:
+;;  - Grasp object with one hand
+;;  - Grasp fragile object with one hand (less effort)
+;;  - Grasp object with two hands (multiple minimum handles)
+;;  - Grasp heavy object (thus infering multiple minimum handles)
+;;  - Get object from drawer
+;;  - Place multiple objects on a kitchen counter
+;;  - Put object into drawer
+;;  - Open drawer
+;;  - Close drawer
+;;  - Grasp two different objects
+
+
+;;;
 ;;; Definitions
 ;;;
 
