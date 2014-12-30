@@ -142,20 +142,13 @@
      (type ,object-type)
      (for-guest ,guest))))
 
-(defmacro mapcar-clean (function list &rest more-lists)
-  "Automatically removes all `NIL' entries from a generated list after
-performing a `mapcar'."
-  (if more-lists
-      `(remove-if #'not (mapcar ,function ,list ,more-lists))
-      `(remove-if #'not (mapcar ,function ,list))))
-
 (defun order-scene-objects (objects)
   (let* ((object-seat-placement-modifiers
            (mapcar
             (lambda (object)
               (let* ((at (desig-prop-value object 'at))
                      (seat-placements
-                       (mapcar-clean
+                       (cpl:mapcar-clean
                         (lambda (property)
                           (when (eql (cadr property) 'seat)
                             (car property)))
