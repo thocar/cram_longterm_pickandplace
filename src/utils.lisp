@@ -491,8 +491,7 @@
                   ?handles))
   
   (<- (reorient-object ?object t)
-    (crs:once
-     (or (desig-prop ?object (type bowl)))))
+    (desig-prop ?object (desig-props::type desig-props::bowl)))
   
   (<- (type-property desig-props:pot desig-props::carry-handles 2))
   
@@ -573,12 +572,17 @@
   (<- (object-handle desig-props::bowl ?handles-list)
     (symbol-value pi ?pi)
     (crs:lisp-fun / ?pi 4 ?tilt)
-    (crs:lisp-fun / ?pi -2.5 ?pi-half)
-    (make-handles -0.015 2 ?pi-half 'desig-props::push ?pi ?tilt 0 0.0 0.0 -0.0 ?handles-list))
+    (crs:lisp-fun / ?pi 2 ?pi-half)
+    (make-handles -0.10 2 ?pi-half 'desig-props::push ?pi ?tilt 0 0.0 0.0 -0.05 ?handles-list))
   
   (<- (infer-object-property ?object desig-props::carry-handles ?carry-handles)
     (infer-object-property ?object desig-props:type ?type)
     (object-carry-handles ?type ?carry-handles))
+  
+  ;; Hacked in for now until the type identification works nicely
+  ;; (waiting for perception)
+  (<- (infer-object-property ?object desig-props::carry-handles 2)
+    (desig-prop ?object (desig-props::type desig-props::bowl)))
   
   ;; Dinnerplate: Carry with 2 arms
   (<- (object-carry-handles desig-props::dinnerplate 2))
