@@ -134,7 +134,7 @@ the function."
   (setf *pancake-mix*
         (make-designator
          'object
-         `((desig-props:at ,*loc-on-sink-block*);,*loc-on-kitchen-island*)
+         `((desig-props:at ,*loc-on-kitchen-island*);,*loc-on-sink-block*)
            (desig-props::type desig-props::pancakemix)
            (desig-props::max-handles 1)
            ,@(mapcar
@@ -231,3 +231,10 @@ string between them."
                       'object (description nn-eff) obj)))
                  (pick-object obj)
                  (place-object obj to-loc))))))))))
+
+(defun start ()
+  (top-level
+    (set-locations)
+    (set-objects)
+    (prepare-settings))
+  (longterm))
