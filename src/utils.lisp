@@ -559,15 +559,13 @@
     (make-handles 2 ?pi-half ?handles-list))
 
   (<- (object-handle desig-props::pancakemix ?handles-list)
-    (symbol-value pi ?pi)
-    (crs:lisp-fun / ?pi 2 ?pi-half)
-    (make-handles 2 ?pi-half ?handles-list))
+    (make-handles 2 0 ?handles-list))
   
   (<- (object-handle desig-props::dinnerplate ?handles-list)
     (symbol-value pi ?pi)
     (crs:lisp-fun / ?pi 4 ?tilt)
-    (crs:lisp-fun / ?pi -2.5 ?pi-half)
-    (make-handles -0.07 8 ?pi-half 'desig-props::push ?pi ?tilt 0 0 0 -0.015 ?handles-list))
+    (crs:lisp-fun / ?pi -2.5 ?pi-part)
+    (make-handles -0.07 8 ?pi-part 'desig-props::push ?pi ?tilt 0 0 0 -0.015 ?handles-list))
   
   (<- (object-handle desig-props::bowl ?handles-list)
     (symbol-value pi ?pi)
