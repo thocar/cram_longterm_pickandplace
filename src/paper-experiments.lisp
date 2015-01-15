@@ -421,3 +421,49 @@
     (declare (ignorable obj-1 obj-2 obj-3))
     (with-designators ((obj-4 (object `())))
       (equate obj-3 obj-4))))
+
+(def-cram-function run-grasp-experiments (amount)
+  (ensure-arms-up)
+  (loop for i from 0 below amount
+        with variance-radius = 6
+        as handle-z-offset = (/ (- (random variance-radius) (/ variance-radius 2)) 10.0)
+        do (progn
+             (set-locations)
+             (let ((log-id (beliefstate:start-node "GRASP-EXPERIMENT" nil 2))
+                   (success t))
+               (unwind-protect
+                    (block protected-block
+                      (cpl:with-failure-handling
+                          ((cram-plan-failures:manipulation-failure (f)
+                             (declare (ignore f))
+                             (setf success nil)
+                             (return-from protected-block)))
+                        (beliefstate:annotate-parameter 'handle-z-offset handle-z-offset)
+                        (with-designators
+                            ((object-to-grasp
+                              (object
+                               `((desig-props:type desig-props:pancakemix)
+                                 (desig-props:at ,*loc-on-kitchen-island*)
+                                 ,@(mapcar
+                                    (lambda (handle-object)
+                                      `(desig-props:handle ,handle-object))
+                                    (make-handles
+                                     0.04
+                                     :segments 2
+                                     :ax (/ pi 2)
+                                     :offset-angle (/ pi 2)
+                                     :center-offset
+                                     (tf:make-3d-vector 0.02 0.0 handle-z-offset)))))))
+                          (pick-object object-to-grasp :stationary t)
+                          (try-forever
+                            (place-object object-to-grasp *loc-on-kitchen-island* :stationary t)))))
+                 (beliefstate:stop-node log-id :success success))))))
+
+(def-top-level-cram-function continuous-grasp-experiment ()
+  (prepare-settings)
+  (format t "Tell me when you're good to go! (Press Enter)~%")
+  (read-line)
+  (beliefstate:set-metadata :experiment "Continuous Grasp Experiment"
+                            :description "The PR2 robot grasps and places an object continuously.")
+  (run-grasp-experiments 10)
+  (beliefstate:extract-files))
