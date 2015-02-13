@@ -454,16 +454,21 @@
                                      :offset-angle (/ pi 2)
                                      :center-offset
                                      (tf:make-3d-vector 0.02 0.0 handle-z-offset)))))))
-                          (pick-object object-to-grasp :stationary t)
+                          (cpl:with-failure-handling
+                              ((cram-plan-failures:object-not-found (f)
+                                 (declare (ignore f))
+                                 (cpl:retry)))
+                            (pick-object object-to-grasp :stationary t))
                           (try-forever
+                            (set-locations)
                             (place-object object-to-grasp *loc-on-kitchen-island* :stationary t)))))
                  (beliefstate:stop-node log-id :success success))))))
 
 (def-top-level-cram-function continuous-grasp-experiment ()
-  (prepare-settings)
-  (format t "Tell me when you're good to go! (Press Enter)~%")
-  (read-line)
-  (beliefstate:set-metadata :experiment "Continuous Grasp Experiment"
-                            :description "The PR2 robot grasps and places an object continuously.")
-  (run-grasp-experiments 10)
-  (beliefstate:extract-files))
+  (with-process-modules
+    (prepare-settings)
+    (format t "Tell me when you're good to go! (Press Enter)~%")
+    (beliefstate:set-metadata :experiment "Continuous Grasp Experiment"
+                              :description "The PR2 robot grasps and places an object continuously.")
+    (run-grasp-experiments 10)
+    (beliefstate:extract-files)))
