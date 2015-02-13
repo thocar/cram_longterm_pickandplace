@@ -463,6 +463,11 @@
         (cadr color-pair)
         0.0d0)))
 
+(def-fact-group table-setting-situational-facts (table-setting-object)
+  
+  (<- (table-setting-object ?situation ?object)
+    ))
+
 (def-fact-group object-refinement-facts (infer-object-property
                                          object-handle
                                          cram-language::grasp-effort

@@ -60,7 +60,8 @@
                designator_integration_msgs-msg
                designator_integration_msgs-srv
                cram-beliefstate
-               continuous-interaction)
+               continuous-interaction
+               cram-task-knowledge)
   :components
   ((:module "src"
             :components
