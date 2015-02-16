@@ -259,161 +259,215 @@ string between them."
 
 (def-top-level-cram-function grab-tray ()
   (with-process-modules
-    (labels ((relative-linear-arm-translation->trajectory
-                 (arm rel-position &key (ignore-collisions t)
-                                     raise-elbow)
-               (let* ((id-pose
-                        (tf:pose->pose-stamped
-                         (case arm
-                           (:left "l_wrist_roll_link")
-                           (:right "r_wrist_roll_link"))
-                         0.0 (tf:make-identity-pose)))
-                      (tl-pose
-                        (cl-tf2:ensure-pose-stamped-transformed
-                         *tf2* id-pose "torso_lift_link"
-                         :use-current-ros-time t))
-                      (tl-translated-pose
-                        (tf:copy-pose-stamped
-                         tl-pose
-                         :origin (tf:v+ (tf:origin tl-pose)
-                                        rel-position))))
-                 (pr2-manip-pm::arm-pose->trajectory
-                  arm tl-translated-pose
-                  :ignore-collisions ignore-collisions
-                  :raise-elbow (when raise-elbow arm))))
-             (absolute-arm-pose->trajectory (arm pose-stamped
-                                             &key raise-elbow
-                                               ignore-position-check)
-               (pr2-manip-pm::arm-pose->trajectory
-                arm pose-stamped
-                :ignore-collisions t
-                :raise-elbow (when raise-elbow arm)
-                :ignore-position-check ignore-position-check)))
-      (moveit:execute-trajectories ;; Move above tray sides
-       (list (absolute-arm-pose->trajectory
-              :left (tf:make-pose-stamped
-                     "base_link" 0.0
-                     (tf:make-3d-vector 0.6 0.36 1.1)
-                     (tf:euler->quaternion
-                      :az (* (/ pi 4) 2)
-                      :ay (* (/ pi 4) 3)
-                      :ax (* (/ pi 4) 2)))
-              :raise-elbow t)
-             (absolute-arm-pose->trajectory
-              :right (tf:make-pose-stamped
-                     "base_link" 0.0
-                     (tf:make-3d-vector 0.6 -0.36 1.1)
-                     (tf:euler->quaternion
-                      :az (* (/ pi 4) 2)
-                      :ay (* (/ pi 4) 1)
-                      :ax (* (/ pi 4) 2)))
-              :raise-elbow t))
-       :ignore-va t)
-      (moveit:execute-trajectories ;; Move grippers down onto table surface.
-       (list (absolute-arm-pose->trajectory
-              :left (tf:make-pose-stamped
-                     "base_link" 0.0
-                     (tf:make-3d-vector 0.6 0.36 0.97)
-                     (tf:euler->quaternion
-                      :az (* (/ pi 4) 2)
-                      :ay (* (/ pi 4) 3)
-                      :ax (* (/ pi 4) 2)))
-              :ignore-position-check t
-              :raise-elbow t)
-             (absolute-arm-pose->trajectory
-              :right (tf:make-pose-stamped
-                      "base_link" 0.0
-                      (tf:make-3d-vector 0.6 -0.36 0.97)
-                      (tf:euler->quaternion
-                       :az (* (/ pi 4) 2)
-                       :ay (* (/ pi 4) 1)
-                       :ax (* (/ pi 4) 2)))
-              :ignore-position-check t
-              :raise-elbow t))
-       :ignore-va t)
-      (moveit:execute-trajectories ;; Move in to tray
-       (list (absolute-arm-pose->trajectory
-              :left (tf:make-pose-stamped
-                     "base_link" 0.0
-                     (tf:make-3d-vector 0.6 0.30 0.97)
-                     (tf:euler->quaternion
-                      :az (* (/ pi 4) 2)
-                      :ay (* (/ pi 4) 3)
-                      :ax (* (/ pi 4) 2)))
-              :ignore-position-check t
-              :raise-elbow t)
-             (absolute-arm-pose->trajectory
-              :right (tf:make-pose-stamped
-                      "base_link" 0.0
-                      (tf:make-3d-vector 0.6 -0.30 0.97)
-                      (tf:euler->quaternion
-                       :az (* (/ pi 4) 2)
-                       :ay (* (/ pi 4) 1)
-                       :ax (* (/ pi 4) 2)))
-              :ignore-position-check t
-              :raise-elbow t))
-       :ignore-va t)
-      (cpl:par ;; Close grippers
-        (pr2-manip-pm::close-gripper :left)
-        (pr2-manip-pm::close-gripper :right))
-      (moveit:execute-trajectories ;; Move tray 10cm up
-       (list (relative-linear-arm-translation->trajectory
-              :left (tf:make-3d-vector 0 0 0.1)
-              :raise-elbow t)
-             (relative-linear-arm-translation->trajectory
-              :right (tf:make-3d-vector 0 0 0.1)
-              :raise-elbow t))
-       :ignore-va t)
-      (moveit:execute-trajectories ;; Move tray 10cm down
-       (list (relative-linear-arm-translation->trajectory
-              :left (tf:make-3d-vector 0 0 -0.1)
-              :raise-elbow t)
-             (relative-linear-arm-translation->trajectory
-              :right (tf:make-3d-vector 0 0 -0.1)
-              :raise-elbow t))
-       :ignore-va t)
-      (cpl:par ;; Open grippers
-        (pr2-manip-pm::open-gripper :left)
-        (pr2-manip-pm::open-gripper :right))
-      (moveit:execute-trajectories ;; Move out of tray
-       (list (absolute-arm-pose->trajectory
-              :left (tf:make-pose-stamped
-                     "base_link" 0.0
-                     (tf:make-3d-vector 0.6 0.36 0.97)
-                     (tf:euler->quaternion
-                      :az (* (/ pi 4) 2)
-                      :ay (* (/ pi 4) 3)
-                      :ax (* (/ pi 4) 2)))
-              :ignore-position-check t
-              :raise-elbow t)
-             (absolute-arm-pose->trajectory
-              :right (tf:make-pose-stamped
-                      "base_link" 0.0
-                      (tf:make-3d-vector 0.6 -0.36 0.97)
-                      (tf:euler->quaternion
-                       :az (* (/ pi 4) 2)
-                       :ay (* (/ pi 4) 1)
-                       :ax (* (/ pi 4) 2)))
-              :ignore-position-check t
-              :raise-elbow t))
-       :ignore-va t)
-      (moveit:execute-trajectories ;; Move above tray sides
-       (list (absolute-arm-pose->trajectory
-              :left (tf:make-pose-stamped
-                     "base_link" 0.0
-                     (tf:make-3d-vector 0.6 0.36 1.1)
-                     (tf:euler->quaternion
-                      :az (* (/ pi 4) 2)
-                      :ay (* (/ pi 4) 3)
-                      :ax (* (/ pi 4) 2)))
-              :raise-elbow t)
-             (absolute-arm-pose->trajectory
-              :right (tf:make-pose-stamped
-                     "base_link" 0.0
-                     (tf:make-3d-vector 0.6 -0.36 1.1)
-                     (tf:euler->quaternion
-                      :az (* (/ pi 4) 2)
-                      :ay (* (/ pi 4) 1)
-                      :ax (* (/ pi 4) 2)))
-              :raise-elbow t))
-       :ignore-va t))))
+    (let ((tray-pose (tf:make-pose-stamped
+                      "base_link"
+                      0.0
+                      (tf:make-3d-vector
+                       0.6 0.0 0.82)
+                      (tf:make-identity-rotation))))
+      (with-designators
+          ((tray-loc (location `((desig-props:pose
+                                  ,tray-pose))))
+           (tray (object `((desig-props:at ,tray-loc)
+                           (desig-props:name desig-props::tray)
+                           (desig-props:dimensions ,(vector 0.1 0.1 0.1))
+                           (desig-props::carry-handles 2)
+                           ,@(mapcar (lambda (handle)
+                                       `(desig-props:handle ,handle))
+                                     (make-handles
+                                      0.15 :segments 2
+                                           :offset-angle (/ pi 2)
+                                           :ay (* (/ pi 4) 3)))))))
+        (let ((effective-tray
+                (make-effective-designator
+                 tray
+                 :data-object (make-instance
+                               'robosherlock-pm::perceived-object-data
+                               :object-identifier 'desig-props::tray
+                               :pose tray-pose))))
+          (with-designators
+              ((grasp-action
+                (action
+                 `((desig-props:type desig-props:trajectory)
+                   (desig-props:to desig-props:grasp)
+                   (desig-props:obj ,effective-tray))))
+               (lift-action
+                (action `((desig-props:type desig-props:trajectory)
+                          (desig-props:to desig-props:lift)
+                          (desig-props:obj ,effective-tray)))))
+            (robosherlock-pm::add-appeared-objects
+             (list effective-tray))
+            (perform grasp-action)
+            (perform lift-action)
+            effective-tray))))))
+
+;; (def-top-level-cram-function grab-tray ()
+;;   (with-process-modules
+;;     (with-designators
+;;         ((tray-loc (location `((desig-props:pose
+;;                                 ,(tf:make-pose-stamped
+;;                                   "base_link"
+;;                                   0.0
+;;                                   (tf:make-3d-vector
+;;                                    0.6 0.0 0.9)
+;;                                   (tf:make-identity-rotation))))))
+;;          (tray (object `((desig-props:at ,tray-loc)))))
+;;     (labels ((relative-linear-arm-translation->trajectory
+;;                  (arm rel-position &key (ignore-collisions t)
+;;                                      raise-elbow)
+;;                (let* ((id-pose
+;;                         (tf:pose->pose-stamped
+;;                          (case arm
+;;                            (:left "l_wrist_roll_link")
+;;                            (:right "r_wrist_roll_link"))
+;;                          0.0 (tf:make-identity-pose)))
+;;                       (tl-pose
+;;                         (cl-tf2:ensure-pose-stamped-transformed
+;;                          *tf2* id-pose "torso_lift_link"
+;;                          :use-current-ros-time t))
+;;                       (tl-translated-pose
+;;                         (tf:copy-pose-stamped
+;;                          tl-pose
+;;                          :origin (tf:v+ (tf:origin tl-pose)
+;;                                         rel-position))))
+;;                  (pr2-manip-pm::arm-pose->trajectory
+;;                   arm tl-translated-pose
+;;                   :ignore-collisions ignore-collisions
+;;                   :raise-elbow (when raise-elbow arm))))
+;;              (absolute-arm-pose->trajectory (arm pose-stamped
+;;                                              &key raise-elbow
+;;                                                ignore-position-check)
+;;                (pr2-manip-pm::arm-pose->trajectory
+;;                 arm pose-stamped
+;;                 :ignore-collisions t
+;;                 :raise-elbow (when raise-elbow arm)
+;;                 :ignore-position-check ignore-position-check)))
+;;       (let ((pregrasp-pose
+;;       (moveit:execute-trajectories ;; Move above tray sides
+;;        (list (absolute-arm-pose->trajectory
+;;               :left (tf:make-pose-stamped
+;;                      "base_link" 0.0
+;;                      (tf:make-3d-vector 0.6 0.36 1.1)
+;;                      (tf:euler->quaternion
+;;                       :az (* (/ pi 4) 2)
+;;                       :ay (* (/ pi 4) 3)
+;;                       :ax (* (/ pi 4) 2)))
+;;               :raise-elbow t)
+;;              (absolute-arm-pose->trajectory
+;;               :right (tf:make-pose-stamped
+;;                      "base_link" 0.0
+;;                      (tf:make-3d-vector 0.6 -0.36 1.1)
+;;                      (tf:euler->quaternion
+;;                       :az (* (/ pi 4) 2)
+;;                       :ay (* (/ pi 4) 1)
+;;                       :ax (* (/ pi 4) 2)))
+;;               :raise-elbow t))
+;;        :ignore-va t)
+;;       (moveit:execute-trajectories ;; Move grippers down onto table surface.
+;;        (list (absolute-arm-pose->trajectory
+;;               :left (tf:make-pose-stamped
+;;                      "base_link" 0.0
+;;                      (tf:make-3d-vector 0.6 0.36 0.97)
+;;                      (tf:euler->quaternion
+;;                       :az (* (/ pi 4) 2)
+;;                       :ay (* (/ pi 4) 3)
+;;                       :ax (* (/ pi 4) 2)))
+;;               :ignore-position-check t
+;;               :raise-elbow t)
+;;              (absolute-arm-pose->trajectory
+;;               :right (tf:make-pose-stamped
+;;                       "base_link" 0.0
+;;                       (tf:make-3d-vector 0.6 -0.36 0.97)
+;;                       (tf:euler->quaternion
+;;                        :az (* (/ pi 4) 2)
+;;                        :ay (* (/ pi 4) 1)
+;;                        :ax (* (/ pi 4) 2)))
+;;               :ignore-position-check t
+;;               :raise-elbow t))
+;;        :ignore-va t)
+;;       (moveit:execute-trajectories ;; Move in to tray
+;;        (list (absolute-arm-pose->trajectory
+;;               :left (tf:make-pose-stamped
+;;                      "base_link" 0.0
+;;                      (tf:make-3d-vector 0.6 0.30 0.97)
+;;                      (tf:euler->quaternion
+;;                       :az (* (/ pi 4) 2)
+;;                       :ay (* (/ pi 4) 3)
+;;                       :ax (* (/ pi 4) 2)))
+;;               :ignore-position-check t
+;;               :raise-elbow t)
+;;              (absolute-arm-pose->trajectory
+;;               :right (tf:make-pose-stamped
+;;                       "base_link" 0.0
+;;                       (tf:make-3d-vector 0.6 -0.30 0.97)
+;;                       (tf:euler->quaternion
+;;                        :az (* (/ pi 4) 2)
+;;                        :ay (* (/ pi 4) 1)
+;;                        :ax (* (/ pi 4) 2)))
+;;               :ignore-position-check t
+;;               :raise-elbow t))
+;;        :ignore-va t)
+;;       (cpl:par ;; Close grippers
+;;         (pr2-manip-pm::close-gripper :left)
+;;         (pr2-manip-pm::close-gripper :right))
+;;       (moveit:execute-trajectories ;; Move tray 10cm up
+;;        (list (relative-linear-arm-translation->trajectory
+;;               :left (tf:make-3d-vector 0 0 0.1)
+;;               :raise-elbow t)
+;;              (relative-linear-arm-translation->trajectory
+;;               :right (tf:make-3d-vector 0 0 0.1)
+;;               :raise-elbow t))
+;;        :ignore-va t)
+;;       (moveit:execute-trajectories ;; Move tray 10cm down
+;;        (list (relative-linear-arm-translation->trajectory
+;;               :left (tf:make-3d-vector 0 0 -0.1)
+;;               :raise-elbow t)
+;;              (relative-linear-arm-translation->trajectory
+;;               :right (tf:make-3d-vector 0 0 -0.1)
+;;               :raise-elbow t))
+;;        :ignore-va t)
+;;       (cpl:par ;; Open grippers
+;;         (pr2-manip-pm::open-gripper :left)
+;;         (pr2-manip-pm::open-gripper :right))
+;;       (moveit:execute-trajectories ;; Move out of tray
+;;        (list (absolute-arm-pose->trajectory
+;;               :left (tf:make-pose-stamped
+;;                      "base_link" 0.0
+;;                      (tf:make-3d-vector 0.6 0.36 0.97)
+;;                      (tf:euler->quaternion
+;;                       :az (* (/ pi 4) 2)
+;;                       :ay (* (/ pi 4) 3)
+;;                       :ax (* (/ pi 4) 2)))
+;;               :ignore-position-check t
+;;               :raise-elbow t)
+;;              (absolute-arm-pose->trajectory
+;;               :right (tf:make-pose-stamped
+;;                       "base_link" 0.0
+;;                       (tf:make-3d-vector 0.6 -0.36 0.97)
+;;                       (tf:euler->quaternion
+;;                        :az (* (/ pi 4) 2)
+;;                        :ay (* (/ pi 4) 1)
+;;                        :ax (* (/ pi 4) 2)))
+;;               :ignore-position-check t
+;;               :raise-elbow t))
+;;        :ignore-va t)
+;;       (moveit:execute-trajectories ;; Move above tray sides
+;;        (list (absolute-arm-pose->trajectory
+;;               :left (tf:make-pose-stamped
+;;                      "base_link" 0.0
+;;                      (tf:make-3d-vector 0.6 0.36 1.1)
+;;                      (tf:euler->quaternion
+;;                       :az (* (/ pi 4) 2)
+;;                       :ay (* (/ pi 4) 3)
+;;                       :ax (* (/ pi 4) 2)))
+;;               :raise-elbow t)
+;;              (absolute-arm-pose->trajectory
+;;               :right (tf:make-pose-stamped
+;;                      "base_link" 0.0
+;;                      (tf:make-3d-vector 0.6 -0.36 1.1)
+;;                      (tf:euler->quaternion
+;;                       :az (* (/ pi 4) 2)
+;;                       :ay (* (/ pi 4) 1)
+;;                       :ax (* (/ pi 4) 2)))
+;;               :raise-elbow t))
+;;        :ignore-va t))))
