@@ -28,6 +28,134 @@
 
 (in-package :cram-longterm-pickandplace)
 
+(defvar *spatula* nil)
+(defvar *coffee* nil)
+
+(def-top-level-cram-function find-and-displace-object-top-level ()
+  (beliefstate:enable-logging nil)
+  (prepare-settings)
+  (beliefstate:enable-logging t)
+  (ensure-arms-up)
+  (set-locations)
+  (set-objects)
+  (with-process-modules
+    (let ((objects `(,*pancake-mix*));,*coffee* 
+          (locations `(,*loc-on-kitchen-island*)));,*loc-on-sink-block*
+      (let ((number-of-trials 10))
+        (loop for i from 0 below number-of-trials
+              do (block out-block
+                   (cpl:with-failure-handling
+                       (((or cram-plan-failures:object-not-found
+                             cram-plan-failures:manipulation-failure
+                             cram-plan-failures:location-not-reached-failure) (f)
+                          (format t "FAILURE: ~a~%" f)
+                          (return-from out-block)))
+                     (find-and-displace-object-plan
+                      objects locations))))))))
+
+(def-cram-function find-and-displace-object-plan (objects locations)
+  (cpl:with-failure-handling
+      ((cram-plan-failures:object-not-found (f)
+         (declare (ignore f))
+         (cpl:fail 'cram-plan-failures:object-not-found)))
+    (choose
+     find-and-displace-object-plan
+     :attempts 2
+     :generators
+     (((object-template) `(,(nth (random (length objects)) objects)))
+      ((location-template) `(,(nth (random (length locations)) locations))))
+     :features
+     ((object-type (desig-prop-value object-template
+                                     'desig-props::type))
+      (location-name (desig-prop-value location-template
+                                       'desig-props::name)))
+     :body
+     (let ((object
+             (find-object-plan object-template location-template)))
+       (when object
+         (try-n-times 1
+           (pick-object-plan object))
+         )))))
+         ;(try-forever
+         ;  (place-object-plan object (nth (random (length locations))
+         ;                                 locations))))))))
+
+(def-cram-function find-object-plan (object-template
+                                     location-template)
+  (let ((return-value nil))
+    (unless
+        (multiple-value-bind (result choose-flag)
+            (choose
+             find-object-plan
+             :attempts 2
+             :features
+             ((object-type (desig-prop-value object-template
+                                             'desig-props::type))
+              (location-name (desig-prop-value location-template
+                                               'desig-props::name)))
+             :constraints ((cram-plan-failures::objectnotfound
+                            (< cut::predicted-failure 0.5)))
+             :body
+             (let* ((location (desig:copy-designator location-template))
+                    (object (desig:copy-designator
+                             object-template
+                             :new-description
+                             `((desig-props:at ,location)))))
+               (perceive-object 'a object)))
+          (format t "~a~%" result)
+          (cond (choose-flag
+                 (setf return-value result))
+                (t t)))
+      (progn
+        (format t "FAIL!~%")
+        (cpl:fail 'cram-plan-failures:object-not-found)))
+    return-value))
+
+(def-cram-function pick-object-plan (object)
+  (beliefstate:annotate-parameter
+   'object-type (desig-prop-value object 'desig-props::type))
+  (let* ((newest (newest-effective-designator object))
+         (at (desig-prop-value newest 'desig-props::at))
+         (pose (desig-prop-value at 'desig-props::pose))
+         (robot-pose-map
+           (cl-tf2:ensure-pose-stamped-transformed
+            *tf2* (tf:make-pose-stamped
+                   "base_footprint" 0.0
+                   (tf:make-identity-vector)
+                   (tf:make-identity-rotation))
+            "map"))
+         (putdown-pose-map
+           (cl-tf2:ensure-pose-stamped-transformed
+            *tf2* pose "map"))
+         (distance-2d
+           (tf:v-dist (tf:make-3d-vector
+                       (tf:x (tf:origin robot-pose-map))
+                       (tf:y (tf:origin robot-pose-map))
+                       0.0)
+                      (tf:make-3d-vector
+                       (tf:x (tf:origin putdown-pose-map))
+                       (tf:y (tf:origin putdown-pose-map))
+                       0.0)))
+         (angle-difference
+           (tf:angle-between-quaternions
+            (tf:orientation robot-pose-map)
+            (tf:orientation putdown-pose-map))))
+    (beliefstate:annotate-parameter 'distance-2d distance-2d)
+    (beliefstate:annotate-parameter 'angle-difference-2d
+                                    angle-difference)
+    ))
+    ;(achieve `(cram-plan-library:object-in-hand ,object))))
+  
+(def-cram-function place-object-plan (object location-template)
+  (beliefstate:annotate-parameter
+   'object-type (desig-prop-value object 'desig-props::type))
+  (beliefstate:annotate-parameter
+   'location-name (desig-prop-value location-template 'desig-props::name))
+  (let ((location (desig:copy-designator location-template)))
+    (achieve `(cram-plan-library::object-placed-at ,object ,location))))
+
+
+
 (def-top-level-cram-function model-tasks ()
   (cpl:with-failure-handling
       ((cram-plan-failures:manipulation-failure (f)
