@@ -45,6 +45,19 @@
      ,@body))
 
 (defmacro try-n-times (n &body body)
+  `(block try-n-times-block
+     (let ((counter ,n))
+       (unless (> counter 0)
+         (cpl:with-failure-handling
+             (((or cram-plan-failures:object-not-found
+                   cram-plan-failures:manipulation-failure
+                   cram-plan-failures:location-not-reached-failure) (f)
+                (declare (ignore f))
+                (decf counter)
+                (cpl:retry)))
+           ,@body)))))
+
+(defmacro try-n-times (n &body body)
   `(cpl:with-retry-counters ((retry-count ,n))
      (cpl:with-failure-handling
          (((or cram-plan-failures:object-not-found
@@ -510,11 +523,18 @@
     (desig-prop ?object (desig-props:type ?type))
     (type-property ?type ?key ?value))
   
+  (<- (infer-object-property ?object desig-props:type ?type)
+    (desig-prop ?object (type ?type)))
+    
   (<- (infer-object-property ?object desig-props:type desig-props::pancakemix)
     (object-color ?object desig-props:yellow ?yellow)
     (object-color ?object desig-props:white ?white)
     (> ?yellow 0.3)
     (> ?white 0.1))
+  
+  (<- (infer-object-property ?object desig-props:type desig-props::coffee)
+    (object-color ?object desig-props:red ?red)
+    (> ?red 0.5))
   
   (<- (infer-object-property ?object desig-props:type desig-props::bowl)
     (object-color ?object desig-props:white ?white)
@@ -526,6 +546,10 @@
     (> ?yellow 0.3)
     (> ?red 0.2))
   
+  (<- (infer-object-property ?object desig-props:type desig-props::tray)
+    (object-color ?object desig-props:black ?black)
+    (> ?black 0.7))
+
   (<- (infer-object-property ?object desig-props:type desig-props::milkbox)
     (object-color ?object desig-props:yellow ?yellow)
     (object-color ?object desig-props:green ?green)
@@ -540,8 +564,12 @@
     (crs:once
      (or (desig-prop ?object (desig-props:type ?type))
          (infer-object-property ?object desig-props:type ?type)))
+    (crs:lisp-fun symbol-package ?type ?pkg)
     (object-handle ?type ?handles-list)
     (member ?handle ?handles-list))
+  
+  (<- (infer-object-property ?object desig-props::grasp-type desig-props::top-slide-down)
+    (desig-prop ?object (desig-props:type desig-props:spatula)))
   
   (<- (infer-object-property ?object desig-props::is desig-props::fragile)
     (or (desig-prop ?object (desig-props::type desig-props::bowl))
@@ -564,19 +592,39 @@
     (make-handles 2 ?pi-half ?handles-list))
 
   (<- (object-handle desig-props::pancakemix ?handles-list)
+    (symbol-value pi ?pi)
+    (crs:lisp-fun / ?pi 2 ?pi-half)
     (make-handles 2 0 ?handles-list))
+
+  (<- (object-handle desig-props::coffee ?handles-list)
+    (symbol-value pi ?pi)
+    (crs:lisp-fun / ?pi 2 ?pi-half)
+    (make-handles 2 0 ?handles-list))
+
+  (<- (object-handle desig-props::spatula ?handles-list)
+    (symbol-value pi ?pi)
+    (crs:lisp-fun / ?pi 2 ?pi-half)
+    (make-handles -0.23 2 0 desig-props::top-slide-down 0 0 ?pi-half 0 0 0.01 ?handles-list))
   
   (<- (object-handle desig-props::dinnerplate ?handles-list)
     (symbol-value pi ?pi)
     (crs:lisp-fun / ?pi 4 ?tilt)
     (crs:lisp-fun / ?pi -2.5 ?pi-part)
-    (make-handles -0.07 8 ?pi-part 'desig-props::push ?pi ?tilt 0 0 0 -0.015 ?handles-list))
+    (make-handles -0.07 8 ?pi-part desig-props::push ?pi ?tilt 0 0 0 -0.015 ?handles-list))
   
   (<- (object-handle desig-props::bowl ?handles-list)
     (symbol-value pi ?pi)
     (crs:lisp-fun / ?pi 4 ?tilt)
     (crs:lisp-fun / ?pi 2 ?pi-half)
     (make-handles -0.10 2 ?pi-half 'desig-props::push ?pi ?tilt 0 0.0 0.0 -0.05 ?handles-list))
+
+  (<- (object-handle desig-props::tray ?handles-list)
+    (symbol-value pi ?pi)
+    (crs:lisp-fun / ?pi 4 ?tilt1)
+    (crs:lisp-fun * ?tilt1 5 ?tilt2)
+    (crs:lisp-fun / ?pi 2 ?pi-half)
+    (make-handles 0.20 2 0 'desig-props::push ?pi ?tilt2
+                  0.0 0.0 0.0 0.0 ?handles-list))
   
   (<- (infer-object-property ?object desig-props::carry-handles ?carry-handles)
     (infer-object-property ?object desig-props:type ?type)
@@ -587,11 +635,15 @@
   (<- (infer-object-property ?object desig-props::carry-handles 2)
     (desig-prop ?object (desig-props::type desig-props::bowl)))
   
+  ;; Tray: Carry with 2 arms
+  (<- (object-carry-handles desig-props::tray 2))
   ;; Dinnerplate: Carry with 2 arms
   (<- (object-carry-handles desig-props::dinnerplate 2))
   ;; Bowl: Carry with 2 arms
   (<- (object-carry-handles desig-props::bowl 2))
   ;; Muesli: Carry with 1 arm
   (<- (object-carry-handles desig-props::muesli 1))
+  ;; Spatula: Carry with 1 arm
+  (<- (object-carry-handles desig-props::spatula 1))
   ;; Milkbox: Carry with 1 arm
   (<- (object-carry-handles desig-props::milkbox 1)))
