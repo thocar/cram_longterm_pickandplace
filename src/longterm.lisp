@@ -295,8 +295,7 @@ string between them."
                                            ,*loc-on-kitchen-island*)))
                              :stationary t
                              :move-head nil))
-           (at (desig-prop-value tray 'desig-props::at))
-           (tray-pose (reference at)))
+           (at (desig-prop-value tray 'desig-props::at)))
       (with-designators
           ((grasp-action
             (action
