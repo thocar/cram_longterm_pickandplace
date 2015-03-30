@@ -347,4 +347,25 @@ string between them."
 ;;          (roslisp:advertise "/handle" "geometry_msgs/PoseStamped")
 ;;          (tf:pose-stamped->msg handle-pose-map))
 ;;         (make-designator 'object `((desig-props::name ,name)
-                                   
+
+(defun marker-relative-pose (marker relative-pose)
+  (let* ((marker-pose (reference
+                       (desig-prop-value marker 'desig-props:at)))
+         (transformed (tf:pose->pose-stamped
+                       (tf:frame-id marker-pose)
+                       0.0
+                       (cl-transforms:transform-pose
+                        (tf:pose->transform relative-pose)
+                        marker-pose))))
+    transformed))
+
+(defun bi-marker-correlation (marker1 marker2)
+  (let* ((marker1-pose (reference (desig-prop-value marker1 'at)))
+         (marker2-pose (reference (desig-prop-value marker2 'at)))
+         (marker2-rel-pose
+           (tf:make-pose
+            (tf:v- (tf:origin marker2-pose)
+                   (tf:origin marker1-pose))
+            (tf:orientation marker2-pose))))
+    (format t "Marker 1 has absolute pose: ~a~%" marker1-pose)
+    (format t "Marker 2 has relative pose: ~a~%" marker2-rel-pose)))

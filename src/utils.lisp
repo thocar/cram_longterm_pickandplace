@@ -370,11 +370,11 @@
         robosherlock-process-module:robosherlock-process-module)
      ,@body))
 
-(defun get-robot-pose ()
+(defun get-robot-pose (&optional (frame-id "/base_link"))
   (cl-tf2:ensure-pose-stamped-transformed
    *tf2*
    (tf:make-pose-stamped
-    "/base_link"
+    frame-id
     0.0
     (tf:make-identity-vector)
     (tf:make-identity-rotation))
@@ -623,7 +623,7 @@
     (crs:lisp-fun / ?pi 4 ?tilt1)
     (crs:lisp-fun * ?tilt1 5 ?tilt2)
     (crs:lisp-fun / ?pi 2 ?pi-half)
-    (make-handles 0.20 2 0 'desig-props::push ?pi ?tilt2
+    (make-handles 0.18 2 0 'desig-props::push ?pi ?tilt2
                   0.0 0.0 0.0 0.0 ?handles-list))
   
   (<- (infer-object-property ?object desig-props::carry-handles ?carry-handles)
