@@ -42,13 +42,13 @@
                  (when (string= val "q")
                    (return-from ret))
                  (let ((gripper-pose
-                         (cl-tf2:ensure-pose-stamped-transformed
+                         (cl-tf2:do-transform
                           *tf2*
                           (tf:pose->pose-stamped
                            gripper-frame
                            (roslisp:ros-time)
                            (tf:make-identity-pose))
-                          "/map" :use-current-ros-time t)))
+                          "/map")))
                    (push
                     gripper-pose
                     gripper-poses)))))

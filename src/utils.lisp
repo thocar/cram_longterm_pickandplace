@@ -371,14 +371,14 @@
      ,@body))
 
 (defun get-robot-pose (&optional (frame-id "/base_link"))
-  (cl-tf2:ensure-pose-stamped-transformed
+  (cl-tf2:do-transform
    *tf2*
    (tf:make-pose-stamped
     frame-id
     0.0
     (tf:make-identity-vector)
     (tf:make-identity-rotation))
-   "/map" :use-current-ros-time t))
+   "/map"))
 
 (defun drive-to-pose (pose-stamped)
   (block nav

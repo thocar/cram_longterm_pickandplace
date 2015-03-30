@@ -118,14 +118,14 @@
          (at (desig-prop-value newest 'desig-props::at))
          (pose (desig-prop-value at 'desig-props::pose))
          (robot-pose-map
-           (cl-tf2:ensure-pose-stamped-transformed
+           (cl-tf2:do-transform
             *tf2* (tf:make-pose-stamped
                    "base_footprint" 0.0
                    (tf:make-identity-vector)
                    (tf:make-identity-rotation))
             "map"))
          (putdown-pose-map
-           (cl-tf2:ensure-pose-stamped-transformed
+           (cl-tf2:do-transform
             *tf2* pose "map"))
          (distance-2d
            (tf:v-dist (tf:make-3d-vector
@@ -300,7 +300,7 @@
                        (cram-plan-library::next-solution
                         (desig:current-desig loc)))))
                   ((area) `(,area))
-                  ((robot-pose) `(,(cl-tf2:ensure-pose-stamped-transformed
+                  ((robot-pose) `(,(cl-tf2:do-transform
                                     *tf2*
                                     (tf:make-pose-stamped
                                      "/base_footprint" 0.0
