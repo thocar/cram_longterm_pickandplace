@@ -119,10 +119,9 @@
          (pose (desig-prop-value at 'desig-props::pose))
          (robot-pose-map
            (cl-tf2:do-transform
-            *tf2* (tf:make-pose-stamped
-                   "base_footprint" 0.0
-                   (tf:make-identity-vector)
-                   (tf:make-identity-rotation))
+            *tf2* (cl-transforms-plugin:make-pose-stamped
+                   (cl-tf:make-identity-pose)
+                   "base_footprint" 0.0)
             "map"))
          (putdown-pose-map
            (cl-tf2:do-transform
@@ -302,10 +301,9 @@
                   ((area) `(,area))
                   ((robot-pose) `(,(cl-tf2:do-transform
                                     *tf2*
-                                    (tf:make-pose-stamped
-                                     "/base_footprint" 0.0
-                                     (tf:make-identity-vector)
-                                     (tf:make-identity-rotation))
+                                    (cl-transforms-plugin:make-pose-stamped
+                                     (cl-tf:make-identity-pose)
+                                     "/base_footprint" 0.0)
                                     "/map"))))
      :features ((look-x (tf:x (tf:origin looking-at-pose)))
                 (look-y (tf:y (tf:origin looking-at-pose)))
@@ -330,10 +328,11 @@
   (setf cram-prediction::*enable-prediction* predict)
   (with-process-modules
     (with-designators ((loc (location `((desig-props::pose
-                                         ,(tf:make-pose-stamped
-                                           "/map" 0.0
-                                           (tf:make-3d-vector 1 2 3)
-                                           (tf:make-identity-rotation)))))))
+                                         ,(cl-transforms-plugin:make-pose-stamped
+                                           (cl-tf:make-pose
+                                            (tf:make-3d-vector 1 2 3)
+                                            (tf:make-identity-rotation))
+                                           "/map" 0.0))))))
       (declare (ignorable loc))
       (let ((i 0))
         (loop while (< i trials)

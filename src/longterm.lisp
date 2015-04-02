@@ -267,26 +267,6 @@ string between them."
     (test-intermediate))
   (test-intermediate))
 
-      ;; (let ((tray-pose (tf:make-pose-stamped
-      ;;                   "base_link"
-      ;;                   0.0
-      ;;                   (tf:make-3d-vector
-      ;;                    0.6 0.0 0.82)
-      ;;                   (tf:make-identity-rotation))))
-      ;(with-designators
-       ;   (;;(tray-loc (location `((desig-props:pose
-           ;;                       ,tray-pose))))
-           ;; (tray (object `((desig-props:at ,tray-loc)
-           ;;                 (desig-props:name desig-props::tray)
-           ;;                 (desig-props:dimensions ,(vector 0.1 0.1 0.1))
-           ;;                 (desig-props::carry-handles 2)
-           ;;                 ,@(mapcar (lambda (handle)
-           ;;                             `(desig-props:handle ,handle))
-           ;;                           (make-handles
-           ;;                            0.15 :segments 2
-           ;;                                 :offset-angle (/ pi 2)
-           ;;                                 :ay (* (/ pi 4) 3)))))))
-
 (def-top-level-cram-function grab-tray ()
   (with-process-modules
     (let* ((tray (perceive-a (an object `((desig-props:type
@@ -311,42 +291,16 @@ string between them."
                       (desig-props:to desig-props::shove-into)
                       (desig-props:obj ,tray)
                       (desig-props:pose
-                       ,(tf:make-pose-stamped
-                         "base_link" 0.0
-                         (tf:make-3d-vector 0.9 0.0 1.1)
-                         (tf:make-identity-rotation)))))))
+                       ,(cl-transforms-plugin:make-pose-stamped
+                         (cl-tf:make-pose
+                          (tf:make-3d-vector 0.9 0.0 1.1)
+                          (tf:make-identity-rotation))
+                         "base_link" 0.0))))))
         (declare (ignorable shove-into-action))
         (perform grasp-action)
         (perform lift-action)
         ;;(perform shove-into-action)
         ))))
-
-;; (defun drawer-detection (&optional (name "drawer_sinkblock_upper"))
-;;   (let ((semantic-handle-reference
-;;           (first (sem-map-utils:designator->semantic-map-objects
-;;                   (make-designator 'object `((name ,name)))))))
-;;     (when semantic-handle-reference
-;;       (let* ((handle-name
-;;                (concatenate 'string name "_handle"))
-;;              (handle (first (see-object
-;;                              `((desig-props:name ,handle-name)
-;;                                (desig-props:type
-;;                                 desig-props::semantic-handle)))))
-;;              (handle-pose (desig-prop-value handle
-;;                                             'desig-props:pose))
-;;              (semantic-handle-pose
-;;                (sem-map-utils:pose semantic-handle-reference))
-;;              (handle-pose-map
-;;                (tf:copy-pose-stamped
-;;                 (cl-tf2:ensure-pose-stamped-transformed
-;;                  cram-roslisp-common::*tf2*
-;;                  handle-pose
-;;                  "map" :use-current-ros-time t)
-;;                 :orientation (tf:orientation semantic-handle-pose))))
-;;         (roslisp:publish
-;;          (roslisp:advertise "/handle" "geometry_msgs/PoseStamped")
-;;          (tf:pose-stamped->msg handle-pose-map))
-;;         (make-designator 'object `((desig-props::name ,name)
 
 (defun marker-relative-pose (marker relative-pose)
   (let* ((marker-pose (reference
