@@ -211,19 +211,21 @@
   (when (or (eql side :left) (not side))
     (pr2-manip-pm::execute-move-arm-pose
      :left
-     (tf:make-pose-stamped
-      "base_link" (roslisp:ros-time)
-      (tf:make-3d-vector 0.3 0.5 1.3)
-      (tf:euler->quaternion :ax 0));pi))
+     (cl-transforms-plugin:make-pose-stamped
+      (cl-transforms:make-pose
+       (tf:make-3d-vector 0.3 0.5 1.3)
+       (tf:euler->quaternion :ax 0))
+      "base_link" (roslisp:ros-time))
      :ignore-collisions ignore-collisions
      :allowed-collision-objects allowed-collision-objects))
   (when (or (eql side :right) (not side))
     (pr2-manip-pm::execute-move-arm-pose
      :right
-     (tf:make-pose-stamped
-      "base_link" (roslisp:ros-time)
-      (tf:make-3d-vector 0.3 -0.5 1.3)
-      (tf:euler->quaternion :ax 0));pi))
+     (cl-transforms-plugin:make-pose-stamped
+      (cl-transforms:make-pose
+       (tf:make-3d-vector 0.3 -0.5 1.3)
+       (tf:euler->quaternion :ax 0))
+      "base_link" (roslisp:ros-time))
      :ignore-collisions ignore-collisions
      :allowed-collision-objects allowed-collision-objects)))
 
