@@ -44,10 +44,10 @@
                  (let ((gripper-pose
                          (cl-tf2:do-transform
                           *tf2*
-                          (cl-transforms-plugin:pose->pose-stamped
+                          (cl-transforms-plugin:make-pose-stamped
+                           (tf:make-identity-pose)
                            gripper-frame
-                           (roslisp:ros-time)
-                           (tf:make-identity-pose))
+                           (roslisp:ros-time))
                           "/map")))
                    (push
                     gripper-pose
@@ -65,8 +65,8 @@
     (if (or (eql to 'desig-props:see)
             (eql to 'desig-props:reach))
         (if (moveit::check-base-pose-validity
-             (cl-transforms-plugin:pose->pose-stamped
-              "map" 0.0 pose))
+             (cl-transforms-plugin:make-pose-stamped
+              pose "map" 0.0))
             (prog1 :accept (format t "I say yes~%"))
             (prog1 :reject (format t "I say no~%")))
         (prog1 :unknown (format t "I say unknown~%")))))

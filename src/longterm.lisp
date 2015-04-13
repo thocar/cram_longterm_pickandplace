@@ -305,12 +305,12 @@ string between them."
 (defun marker-relative-pose (marker relative-pose)
   (let* ((marker-pose (reference
                        (desig-prop-value marker 'desig-props:at)))
-         (transformed (cl-transforms-plugin:pose->pose-stamped
-                       (cl-tf2:get-frame-id marker-pose)
-                       0.0
+         (transformed (cl-transforms-plugin:make-pose-stamped
                        (cl-transforms:transform-pose
                         (tf:pose->transform relative-pose)
-                        marker-pose))))
+                        marker-pose)
+                       (cl-tf2:get-frame-id marker-pose)
+                       0.0)))
     transformed))
 
 (defun bi-marker-correlation (marker1 marker2)
