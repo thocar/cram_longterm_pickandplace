@@ -120,25 +120,25 @@
          (robot-pose-map
            (cl-tf2:do-transform
             *tf2* (cl-transforms-plugin:make-pose-stamped
-                   (cl-tf:make-identity-pose)
+                   (cl-transforms:make-identity-pose)
                    "base_footprint" 0.0)
             "map"))
          (putdown-pose-map
            (cl-tf2:do-transform
             *tf2* pose "map"))
          (distance-2d
-           (tf:v-dist (tf:make-3d-vector
-                       (tf:x (tf:origin robot-pose-map))
-                       (tf:y (tf:origin robot-pose-map))
+           (cl-transforms:v-dist (cl-transforms:make-3d-vector
+                       (cl-transforms:x (cl-transforms:origin robot-pose-map))
+                       (cl-transforms:y (cl-transforms:origin robot-pose-map))
                        0.0)
-                      (tf:make-3d-vector
-                       (tf:x (tf:origin putdown-pose-map))
-                       (tf:y (tf:origin putdown-pose-map))
+                      (cl-transforms:make-3d-vector
+                       (cl-transforms:x (cl-transforms:origin putdown-pose-map))
+                       (cl-transforms:y (cl-transforms:origin putdown-pose-map))
                        0.0)))
          (angle-difference
-           (tf:angle-between-quaternions
-            (tf:orientation robot-pose-map)
-            (tf:orientation putdown-pose-map))))
+           (cl-transforms:angle-between-quaternions
+            (cl-transforms:orientation robot-pose-map)
+            (cl-transforms:orientation putdown-pose-map))))
     (beliefstate:annotate-parameter 'distance-2d distance-2d)
     (beliefstate:annotate-parameter 'angle-difference-2d
                                     angle-difference)
@@ -305,8 +305,8 @@
                                      (cl-tf:make-identity-pose)
                                      "/base_footprint" 0.0)
                                     "/map"))))
-     :features ((look-x (tf:x (tf:origin looking-at-pose)))
-                (look-y (tf:y (tf:origin looking-at-pose)))
+     :features ((look-x (cl-transforms:x (cl-transforms:origin looking-at-pose)))
+                (look-y (cl-transforms:y (cl-transforms:origin looking-at-pose)))
                 (obj-type (desig-prop-value obj 'desig-props::type)))
      :constraints ((cram-plan-failures::objectnotfound
                     (or (< cut::predicted-failure 0.5))))
@@ -330,8 +330,8 @@
     (with-designators ((loc (location `((desig-props::pose
                                          ,(cl-transforms-plugin:make-pose-stamped
                                            (cl-tf:make-pose
-                                            (tf:make-3d-vector 1 2 3)
-                                            (tf:make-identity-rotation))
+                                            (cl-transforms:make-3d-vector 1 2 3)
+                                            (cl-transforms:make-identity-rotation))
                                            "/map" 0.0))))))
       (declare (ignorable loc))
       (let ((i 0))
@@ -373,8 +373,8 @@
    look-at
    :features ((look-x (/ (random 100) 10.0))
               (look-y (/ (random 100) 10.0))
-              (distance (tf:v-dist (tf:make-3d-vector nav-x nav-y 0)
-                                   (tf:make-3d-vector look-x look-y 0))))
+              (distance (cl-transforms:v-dist (cl-transforms:make-3d-vector nav-x nav-y 0)
+                                   (cl-transforms:make-3d-vector look-x look-y 0))))
    :constraints ((desig-props::objectnotfound
                   (progn
                     (format t "~a~%" cut::predicted-failure)
@@ -471,11 +471,11 @@
   (prediction:choose
    perceive
    :generators (((look-position)
-                 `(,(tf:make-3d-vector (/ (random 100) 10.0)
+                 `(,(cl-transforms:make-3d-vector (/ (random 100) 10.0)
                                        (/ (random 100) 10.0)
                                        0.0))))
-   :features ((look-x (tf:x look-position))
-              (look-y (tf:y look-position)))
+   :features ((look-x (cl-transforms:x look-position))
+              (look-y (cl-transforms:y look-position)))
    :constraints ((cram-plan-failures::objectnotfound
                   (or (not cut::predicted-failure)
                       (< cut::predicted-failure
@@ -495,12 +495,12 @@
   (cut:choose
    navigate
    :generators (((nav-position)
-                 `(,(tf:make-3d-vector (/ (random 100) 10.0)
+                 `(,(cl-transforms:make-3d-vector (/ (random 100) 10.0)
                                        (/ (random 100) 10.0)
                                        0.0))))
-   :features ((nav-x (tf:x nav-position))
-              (nav-y (tf:y nav-position))
-              (distance (tf:v-dist nav-position
+   :features ((nav-x (cl-transforms:x nav-position))
+              (nav-y (cl-transforms:y nav-position))
+              (distance (cl-transforms:v-dist nav-position
                                    obj-position)))
    :constraints ((cram-plan-failures::locationnotreached
                   (or (not cut::predicted-failure)
@@ -580,7 +580,7 @@
                                      :ax (/ pi 2)
                                      :offset-angle (/ pi 2)
                                      :center-offset
-                                     (tf:make-3d-vector 0.02 0.0 handle-z-offset)))))))
+                                     (cl-transforms:make-3d-vector 0.02 0.0 handle-z-offset)))))))
                           (cpl:with-failure-handling
                               ((cram-plan-failures:object-not-found (f)
                                  (declare (ignore f))

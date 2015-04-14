@@ -146,7 +146,7 @@ the function."
                :ax (/ pi 2)
                :offset-angle (/ pi 2)
                :center-offset
-               (tf:make-3d-vector 0.02 0.0 0.0))))))
+               (cl-transforms:make-3d-vector 0.02 0.0 0.0))))))
   (setf *coffee*
         (make-designator
          'object
@@ -293,8 +293,8 @@ string between them."
                       (desig-props:pose
                        ,(cl-transforms-plugin:make-pose-stamped
                          (cl-tf:make-pose
-                          (tf:make-3d-vector 0.9 0.0 1.1)
-                          (tf:make-identity-rotation))
+                          (cl-transforms:make-3d-vector 0.9 0.0 1.1)
+                          (cl-transforms:make-identity-rotation))
                          "base_link" 0.0))))))
         (declare (ignorable shove-into-action))
         (perform grasp-action)
@@ -307,7 +307,8 @@ string between them."
                        (desig-prop-value marker 'desig-props:at)))
          (transformed (cl-transforms-plugin:make-pose-stamped
                        (cl-transforms:transform-pose
-                        (tf:pose->transform relative-pose)
+                        ;; TODO(winkler): Is this already implemented in cl-tf2?
+                        (cl-transforms:pose->transform relative-pose)
                         marker-pose)
                        (cl-tf2:get-frame-id marker-pose)
                        0.0)))
@@ -317,9 +318,9 @@ string between them."
   (let* ((marker1-pose (reference (desig-prop-value marker1 'at)))
          (marker2-pose (reference (desig-prop-value marker2 'at)))
          (marker2-rel-pose
-           (tf:make-pose
-            (tf:v- (tf:origin marker2-pose)
-                   (tf:origin marker1-pose))
-            (tf:orientation marker2-pose))))
+           (cl-transforms:make-pose
+            (cl-transforms:v- (cl-transforms:origin marker2-pose)
+                              (cl-transforms:origin marker1-pose))
+            (cl-transforms:orientation marker2-pose))))
     (format t "Marker 1 has absolute pose: ~a~%" marker1-pose)
     (format t "Marker 2 has relative pose: ~a~%" marker2-rel-pose)))

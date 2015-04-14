@@ -70,7 +70,7 @@
 
 (defun publish-pose (pose &optional (topic "/object"))
   (let ((adv (roslisp:advertise topic "geometry_msgs/PoseStamped")))
-    (roslisp:publish adv (tf:pose-stamped->msg pose))))
+    (roslisp:publish adv (cl-transforms-plugin:pose-stamped->msg pose))))
 
 (defun set-locations ()
   (setf *loc-on-kitchen-island*
@@ -213,8 +213,8 @@
      :left
      (cl-transforms-plugin:make-pose-stamped
       (cl-transforms:make-pose
-       (tf:make-3d-vector 0.3 0.5 1.3)
-       (tf:euler->quaternion :ax 0))
+       (cl-transforms:make-3d-vector 0.3 0.5 1.3)
+       (cl-transforms:euler->quaternion :ax 0))
       "base_link" (roslisp:ros-time))
      :ignore-collisions ignore-collisions
      :allowed-collision-objects allowed-collision-objects))
@@ -223,8 +223,8 @@
      :right
      (cl-transforms-plugin:make-pose-stamped
       (cl-transforms:make-pose
-       (tf:make-3d-vector 0.3 -0.5 1.3)
-       (tf:euler->quaternion :ax 0))
+       (cl-transforms:make-3d-vector 0.3 -0.5 1.3)
+       (cl-transforms:euler->quaternion :ax 0))
       "base_link" (roslisp:ros-time))
      :ignore-collisions ignore-collisions
      :allowed-collision-objects allowed-collision-objects)))
@@ -236,19 +236,19 @@
                        (offset-angle 0.0)
                        grasp-type
                        (center-offset
-                        (tf:make-identity-vector)))
+                        (cl-transforms:make-identity-vector)))
   (loop for i from 0 below segments
         as current-angle = (+ (* 2 pi (float (/ i segments)))
                               offset-angle)
-        as handle-pose = (tf:make-pose
-                          (tf:make-3d-vector
+        as handle-pose = (cl-transforms:make-pose
+                          (cl-transforms:make-3d-vector
                            (+ (* distance-from-center (cos current-angle))
-                              (tf:x center-offset))
+                              (cl-transforms:x center-offset))
                            (+ (* distance-from-center (sin current-angle))
-                              (tf:y center-offset))
+                              (cl-transforms:y center-offset))
                            (+ 0.0
-                              (tf:z center-offset)))
-                          (tf:euler->quaternion
+                              (cl-transforms:z center-offset)))
+                          (cl-transforms:euler->quaternion
                            :ax ax :ay ay :az (+ az current-angle)))
         as handle-object = (make-designator
                             'cram-designators:object
@@ -277,20 +277,20 @@
            (cl-urdf:parse-urdf
             (roslisp:get-param "kitchen_description")))
          (test-03 (ros-info (bullet) "Kitchen description OK"))
-         (scene-rot-quaternion (tf:euler->quaternion :az pi))
-         (scene-rot `(,(tf:x scene-rot-quaternion)
-                      ,(tf:y scene-rot-quaternion)
-                      ,(tf:z scene-rot-quaternion)
-                      ,(tf:w scene-rot-quaternion)))
+         (scene-rot-quaternion (cl-transforms:euler->quaternion :az pi))
+         (scene-rot `(,(cl-transforms:x scene-rot-quaternion)
+                      ,(cl-transforms:y scene-rot-quaternion)
+                      ,(cl-transforms:z scene-rot-quaternion)
+                      ,(cl-transforms:w scene-rot-quaternion)))
          (scene-trans `(-3.45 -4.35 0))
          (robot-pose robot-pose)
-         (robot-rot `(,(tf:x (tf:orientation robot-pose))
-                      ,(tf:y (tf:orientation robot-pose))
-                      ,(tf:z (tf:orientation robot-pose))
-                      ,(tf:w (tf:orientation robot-pose))))
-         (robot-trans `(,(tf:x (tf:origin robot-pose))
-                        ,(tf:y (tf:origin robot-pose))
-                        ,(tf:z (tf:origin robot-pose))))
+         (robot-rot `(,(cl-transforms:x (cl-transforms:orientation robot-pose))
+                      ,(cl-transforms:y (cl-transforms:orientation robot-pose))
+                      ,(cl-transforms:z (cl-transforms:orientation robot-pose))
+                      ,(cl-transforms:w (cl-transforms:orientation robot-pose))))
+         (robot-trans `(,(cl-transforms:x (cl-transforms:origin robot-pose))
+                        ,(cl-transforms:y (cl-transforms:origin robot-pose))
+                        ,(cl-transforms:z (cl-transforms:origin robot-pose))))
          (test-1 (ros-info (bullet) "Asserting scene"))
          (bdgs
            (car
@@ -311,13 +311,13 @@
                             collect `(btr:assert
                                       (btr:object
                                        ?w btr:box ,obj-name
-                                       ((,(tf:x (tf:origin obj-pose))
-                                         ,(tf:y (tf:origin obj-pose))
-                                         ,(tf:z (tf:origin obj-pose)))
-                                        (,(tf:x (tf:orientation obj-pose))
-                                         ,(tf:y (tf:orientation obj-pose))
-                                         ,(tf:z (tf:orientation obj-pose))
-                                         ,(tf:w (tf:orientation obj-pose))))
+                                       ((,(cl-transforms:x (cl-transforms:origin obj-pose))
+                                         ,(cl-transforms:y (cl-transforms:origin obj-pose))
+                                         ,(cl-transforms:z (cl-transforms:origin obj-pose)))
+                                        (,(cl-transforms:x (cl-transforms:orientation obj-pose))
+                                         ,(cl-transforms:y (cl-transforms:orientation obj-pose))
+                                         ,(cl-transforms:z (cl-transforms:orientation obj-pose))
+                                         ,(cl-transforms:w (cl-transforms:orientation obj-pose))))
                                        :mass 0.0 :size (0.1 0.1 0.1))))
                     (assert (btr:object
                              ?w btr:urdf ?robot
@@ -376,7 +376,7 @@
   (cl-tf2:do-transform
    *tf2*
    (cl-transforms-plugin:make-pose-stamped
-    (cl-tf:make-identity-pose)
+    (cl-transforms:make-identity-pose)
     frame-id 0.0)
    "/map"))
 

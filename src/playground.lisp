@@ -45,7 +45,7 @@
                          (cl-tf2:do-transform
                           *tf2*
                           (cl-transforms-plugin:make-pose-stamped
-                           (tf:make-identity-pose)
+                           (cl-transforms:make-identity-pose)
                            gripper-frame
                            (roslisp:ros-time))
                           "/map")))
