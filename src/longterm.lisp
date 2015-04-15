@@ -292,7 +292,7 @@ string between them."
                       (desig-props:obj ,tray)
                       (desig-props:pose
                        ,(cl-transforms-plugin:make-pose-stamped
-                         (cl-tf:make-pose
+                         (cl-transforms:make-pose
                           (cl-transforms:make-3d-vector 0.9 0.0 1.1)
                           (cl-transforms:make-identity-rotation))
                          "base_link" 0.0))))))

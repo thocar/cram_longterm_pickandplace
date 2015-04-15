@@ -302,7 +302,7 @@
                   ((robot-pose) `(,(cl-tf2:do-transform
                                     *tf2*
                                     (cl-transforms-plugin:make-pose-stamped
-                                     (cl-tf:make-identity-pose)
+                                     (cl-transforms:make-identity-pose)
                                      "/base_footprint" 0.0)
                                     "/map"))))
      :features ((look-x (cl-transforms:x (cl-transforms:origin looking-at-pose)))
@@ -329,7 +329,7 @@
   (with-process-modules
     (with-designators ((loc (location `((desig-props::pose
                                          ,(cl-transforms-plugin:make-pose-stamped
-                                           (cl-tf:make-pose
+                                           (cl-transforms:make-pose
                                             (cl-transforms:make-3d-vector 1 2 3)
                                             (cl-transforms:make-identity-rotation))
                                            "/map" 0.0))))))
