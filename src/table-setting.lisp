@@ -502,3 +502,11 @@
     (crs:lisp-fun positions->seat-location ?seat ?positions ?location)
     (crs:lisp-fun object-type->object
                   ?object-type ?location ?guest ?object)))
+
+  (<- (object-loc ?object ?obj-loc)
+    (desig-prop ?object (type ?obj-type))
+    (object-position ?obj-type ?obj-loc))
+
+  (<- (number-of-hands ?object ?num-of-hands)
+    (desig-prop ?object (type ?obj-type))
+    (num-of-hands ?obj-type ?num-of-hands)))

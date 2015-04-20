@@ -480,6 +480,12 @@
                                `(,(make-designator 'object desc) ,bring-to))))
                          (crs:prolog `(required-object ?o)))))
 
+(defun get-objectlocation-from-object (object-designator)
+  (crs:prolog `(object-loc ,object-designator ?obj-loc)))
+
+(defun get-number-of-needed-hands (object-designator)
+  (crs:prolog `(number-of-hands ,object-designator ?num-of-hands)))
+
 
 ;; EIGENE FUNKTIONEN ENDE
 
