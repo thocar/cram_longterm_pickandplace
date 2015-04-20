@@ -639,7 +639,7 @@
                ?positions)
     (crs:lisp-fun positions->seat-location ?seat ?positions ?location)
     (crs:lisp-fun object-type->object
-                  ?object-type ?location ?guest ?object)))
+                  ?object-type ?location ?guest ?object))
 
   (<- (object-loc ?object ?obj-loc)
     (desig-prop ?object (type ?obj-type))
