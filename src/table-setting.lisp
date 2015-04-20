@@ -495,6 +495,15 @@
   (<- (center-relative-object-table-position spoon left-of))
   (<- (center-relative-object-table-position cup left-of))
   (<- (center-relative-object-table-position cup behind-of))
+
+  ;; EIGENE TABLE-POSITIONEN ANFANG
+  (<- (center-relative-object-table-position pizza_cutter behind-of))
+  (<- (center-relative-object-table-position cornflakes behind-of))
+  (<- (center-relative-object-table-position applesauce behind-of))
+  (<- (center-relative-object-table-position applesauce left-of))
+  (<- (center-relative-object-table-position sugar right-of))
+  (<- (center-relative-object-table-position sugar behind-of))
+  ;; EIGENE TABLE-POSITIONEN ENDE
   
   (<- (center-relative-object-table-position ?_ near))
   
