@@ -442,7 +442,7 @@
   (<- (required-meal-object soup bowl))
   (<- (required-meal-object soup spoon))
 
-  ;; EIGENE OBJEKTE ANFANG
+  ;; EIGENER STUFF ANFANG
   (<- (required-meal-object cornflakes bowl))
   (<- (required-meal-object cornflakes cornflakes))
   (<- (required-meal-object cornflakes milkbox))
@@ -465,7 +465,27 @@
   (<- (required-meal-object pancakes applesauce))
 
   (<- (required-meal-object milk milkbox))
-  ;; EIGENE OBJEKTE ENDE
+  
+  ;; Object Locations
+  (<- (object-position milkbox "fridge1"))
+  
+  (<- (object-position spoon "drawer1"))
+
+  (<- (object-position bowl "drawer1"))
+
+  (<- (object-position muesli "drawer1"))
+
+  (<- (object-position ?_ "kitchen_sink_block"))
+  
+  (<- (location-details "fridge1" (in container)))
+  (<- (location-details "drawer1" (in drawer)))
+  (<- (location-details "kitchen_sink_block" (on Cupboard)))
+
+  ;; Number of needed grippers
+  (<- (num-of-hands bowl 2))
+
+  (<- (num-of-hands ?_ 1))
+  ;; EIGENER STUFF ENDE
   
   ;; General rules for table setting object placement
   (<- (center-relative-object-table-position bowl center-of))
