@@ -192,11 +192,11 @@
                    positions))))
 
 (defun object-type->object (object-type location guest)
-  (make-designator
-   'object
-   `((at ,location)
-     (type ,object-type)
-     (for-guest ,guest))))
+    (make-designator 
+     'object
+     `((bring-to ,location)
+       (type ,object-type)
+       (for-guest ,guest))))
 
 (defun order-scene-objects (objects)
   (let* ((object-seat-placement-modifiers
