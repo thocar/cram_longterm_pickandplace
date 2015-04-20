@@ -242,6 +242,51 @@
                          lazy-scene-objects))))
     scene-objects))
 
+;; EIGENE FUNKTIONEN ANFANG
+
+(defun find-object-2(object-designator)
+  (lazy-mapcar (lambda (bdgs)
+                 (with-vars-bound (?obj-loc) bdgs
+                   (if (or (string= ?obj-loc "fridge1")
+                           (string= ?obj-loc "drawer1"))
+                       (progn
+                         (roslisp::ros-info (find-object) "Can't find ~a at this location: ~a" (prin1-to-string (desig-prop-value object-designator 'type)) ?obj-loc)
+                         nil)
+                       ;; (common-lisp::concatenate 'string "Found object at this location: " (rest obj-loc)))))
+                       ;; (make-designator 'object `(,@object-designator ,(make-designator 'location `(at ,(rest obj-loc))))))))
+                       (top-level
+                         (with-designators ((o-loc (location `((desig-props::on Cupboard)
+                                                               (desig-props::name ,?obj-loc))))
+                                            (obj (object (desig:update-designator-properties `((desig-props::at ,o-loc)) (description object-designator)))))
+                           ;; object))))
+                           obj)))))
+               (get-objectlocation-from-object object-designator)))
+
+(defun find-object-3(object-designator)
+  (lazy-mapcar (lambda (bdgs)
+                 (with-vars-bound (?obj-loc) bdgs
+                   (if (or (string= ?obj-loc "fridge1")
+                           (string= ?obj-loc "drawer1"))
+                       ;; (print (common-lisp::concatenate 'string "Can't find " (prin1-to-string (desig-prop-value object-designator 'type)) " at this location: " ?obj-loc))
+                       (progn
+                         (roslisp::ros-info (find-object) "Can't find ~a at this location: ~a" (prin1-to-string (desig-prop-value object-designator 'type)) ?obj-loc)
+                         nil) 
+                       (top-level
+                         (with-designators ((o-loc (location `((desig-props::on Cupboard)
+                                                               (desig-props::name ,?obj-loc))))
+                                            (obj (object (desig:update-designator-properties `((desig-props::at ,o-loc))
+                                                                                             (description object-designator)))))
+                           (block p-block
+                             (cpl-impl:with-failure-handling
+                                 ((cram-plan-failures:object-not-found (f)
+                                    (declare (ignore f))
+                                    (return-from p-block)))
+                               ;; (return-from find-object (perceive-a object :ignore-object-not-found t))))
+                               (return-from find-object-3 (perceive-a obj :ignore-object-not-found t)))))))))
+               (get-objectlocation-from-object object-designator)))
+
+;; EIGENE FUNKTIONEN NEDE
+
 ;;;
 ;;; Plans
 ;;;
