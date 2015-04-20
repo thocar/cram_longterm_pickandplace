@@ -61,4 +61,4 @@
                      #:pancakemix #:flat #:box #:muesli
                      #:ketchup #:color #:yellow #:red #:blue
                      #:green #:white #:seat #:near #:left-of
-                     #:right-of #:behind-of #:center-of #:bowl))
+                     #:right-of #:behind-of #:center-of #:bowl #:bring-to #:object-location))
