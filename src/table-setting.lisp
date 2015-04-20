@@ -75,6 +75,43 @@
   (set-scene-detail 'meal-time 'breakfast)
   (set-scene-detail 'week-day 'saturday))
 
+;; EIGENE SZENEN ANFANG
+(defun set-scene-thomasthesis-test-01 ()
+  (set-scene-detail 'guests `(tim mary))
+  (set-scene-detail 'meal-time 'lunch)
+  (set-scene-detail 'week-day 'sunday))
+
+(defun set-scene-thomasthesis-test-02 ()
+  (set-scene-detail 'guests `(bob))
+  (set-scene-detail 'meal-time 'lunch)
+  (set-scene-detail 'week-day 'sunday))
+
+(defun set-scene-thomasthesis-test-03 ()
+  (set-scene-detail 'guests `(tim mary bob))
+  (set-scene-detail 'meal-time 'dinner)
+  (set-scene-detail 'week-day 'sunday))
+
+(defun set-scene-thomasthesis-test-04 ()
+  (set-scene-detail 'guests `(tim mary bob alice))
+  (set-scene-detail 'meal-time 'lunch)
+  (set-scene-detail 'week-day 'sunday))
+
+(defun set-scene-thomasthesis-test-05 ()
+  (set-scene-detail 'guests `(alice bob))
+  (set-scene-detail 'meal-time 'breakfast)
+  (set-scene-detail 'week-day 'sunday))
+
+(defun set-scene-thomasthesis-one-object ()
+  (set-scene-detail 'guests `(carol))
+  (set-scene-detail 'meal-time 'breakfast)
+  (set-scene-detail 'week-day 'sunday))
+
+(defun set-scene-thomasthesis-experiment-01 ()
+  (set-scene-detail 'guests `(tim))
+  (set-scene-detail 'meal-time 'breakfast)
+  (set-scene-detail 'week-day 'sunday))
+;; EIGENE SZENEN ENDE
+
 (defun rectangular-costmap-generator (x-r y-r w h)
   (lambda (x y)
     (if (and (>= x x-r)
@@ -87,7 +124,9 @@
 (defun seat-center (seat)
   (case seat
     (1 '(-0.89 0.85))
-    (2 '(-0.89 1.5))))
+    (2 '(-0.89 1.5))
+    (3 '(0.89 -1.5))
+    (4 '(0.89 -0.85))))
 
 (defun seat-costmap-generator (seat)
   (let ((seat-width 0.5)
