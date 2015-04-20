@@ -375,6 +375,35 @@
     (context-prop meal-time dinner))
   
   (<- (preference mary dish bread))
+
+  ;; EIGENE PREFERENCES ANFANG
+  (<- (preference bob dish cornflakes)
+    (context-prop meal-time breakfast))
+
+  (<- (preference bob dish pizza)
+    (context-prop meal-time lunch))
+
+  (<- (preference bob dish bread)
+    (context-prop meal-time dinner))
+
+  (<- (preference alice dish scrambled-eggs)
+    (context-prop meal-time breakfast))
+
+  (<- (preference alice dish pancakes)
+    (context-prop meal-time lunch))
+
+  (<- (preference alice dish cornflakes)
+    (context-prop meal-time dinner))
+
+  (<- (preference carol dish milk)
+    (context-prop meal-time breakfast))
+
+  (<- (preference carol dish milk)
+    (context-prop meal-time lunch))
+
+  (<- (preference carol dish milk)
+    (context-prop meal-time dinner))
+  ;; EIGENE PREFERENCES ENDE
   
   ;; Who sits where
   (<- (preference tim seat 2)
@@ -386,6 +415,19 @@
     (crs:== ?guest-count 1))
 
   (<- (preference mary seat 1))
+
+  ;; EIGENE PERSONEN ANFANG
+  (<- (preference bob seat 3))
+  (<- (preference alice seat 4))
+  
+  (<- (preference carol seat 4)
+    (context-prop-amount guests ?guest-count)
+    (> ?guest-count 1))
+  
+  (<- (preference carol seat 1)
+    (context-prop-amount guests ?guest-count)
+    (crs:== ?guest-count 1))
+  ;; EIGENE PERSONEN ENDE
   
   ;; Objects for meals
   (<- (required-meal-object muesli bowl))
@@ -399,6 +441,31 @@
   
   (<- (required-meal-object soup bowl))
   (<- (required-meal-object soup spoon))
+
+  ;; EIGENE OBJEKTE ANFANG
+  (<- (required-meal-object cornflakes bowl))
+  (<- (required-meal-object cornflakes cornflakes))
+  (<- (required-meal-object cornflakes milkbox))
+  (<- (required-meal-object cornflakes spoon))
+
+  (<- (required-meal-object pizza plate))
+  (<- (required-meal-object pizza knife))
+  (<- (required-meal-object pizza fork))
+  (<- (required-meal-object pizza pizza_cutter))
+
+  (<- (required-meal-object scrambled-eggs plate))
+  (<- (required-meal-object scrambled-eggs fork))
+  (<- (required-meal-object scrambled-eggs knife))
+  (<- (required-meal-object scrambled-eggs salt))
+
+  (<- (required-meal-object pancakes plate))
+  (<- (required-meal-object pancakes knife))
+  (<- (required-meal-object pancakes fork))
+  (<- (required-meal-object pancakes sugar))
+  (<- (required-meal-object pancakes applesauce))
+
+  (<- (required-meal-object milk milkbox))
+  ;; EIGENE OBJEKTE ENDE
   
   ;; General rules for table setting object placement
   (<- (center-relative-object-table-position bowl center-of))
