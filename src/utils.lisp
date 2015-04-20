@@ -45,19 +45,6 @@
      ,@body))
 
 (defmacro try-n-times (n &body body)
-  `(block try-n-times-block
-     (let ((counter ,n))
-       (unless (> counter 0)
-         (cpl:with-failure-handling
-             (((or cram-plan-failures:object-not-found
-                   cram-plan-failures:manipulation-failure
-                   cram-plan-failures:location-not-reached-failure) (f)
-                (declare (ignore f))
-                (decf counter)
-                (cpl:retry)))
-           ,@body)))))
-
-(defmacro try-n-times (n &body body)
   `(cpl:with-retry-counters ((retry-count ,n))
      (cpl:with-failure-handling
          (((or cram-plan-failures:object-not-found
@@ -128,24 +115,27 @@
              `(,symbol ,(car decided-value)))
             (t `((,symbol ,(car decided-value))))))))
 
-(defmacro perceive-a (object &key stationary (move-head t))
-  `(cpl:with-failure-handling
-       ((cram-plan-failures:object-not-found (f)
-          (declare (ignore f))
-          (ros-warn (longterm) "Object not found. Retrying.")
-          (cpl:retry)))
-     (cond (,stationary
-            (let ((at (desig-prop-value ,object 'desig-props:at)))
-              (when ,move-head
-                (achieve `(cram-plan-library:looking-at ,(reference at))))
-              (first (perceive-object
-                      'cram-plan-library:currently-visible
-                      ,object))))
-           (t (cpl:with-failure-handling
-                  ((cram-plan-failures:location-not-reached-failure (f)
-                     (declare (ignore f))
-                     (cpl:retry)))
-                (perceive-object 'cram-plan-library:a ,object))))))
+(defun perceive-a (object &key stationary (move-head t) ignore-object-not-found)
+  (cpl-impl:with-retry-counters ((retry-task 3))
+    (cpl:with-failure-handling
+        ((cram-plan-failures:object-not-found (f)
+           (declare (ignore f))
+           (cond (ignore-object-not-found
+                  (cpl:do-retry retry-task
+                    (ros-warn (longterm) "Object not found. Retrying.")
+                    (cpl:retry)))
+                 (t (cpl:retry)))))
+      (cond (stationary
+             (let ((at (desig-prop-value object 'desig-props:at)))
+               (when move-head
+                 (achieve `(cram-plan-library:looking-at ,(reference at))))
+               (first (perceive-object
+                       'cram-plan-library:currently-visible object))))
+            (t (cpl:with-failure-handling
+                   ((cram-plan-failures:location-not-reached-failure (f)
+                      (declare (ignore f))
+                      (cpl:retry)))
+                 (perceive-object 'cram-plan-library:a object)))))))
 
 (defun perceive-scene ()
   (with-designators ((act-perc-scn (action `((desig-props:to
@@ -154,24 +144,24 @@
                                               desig-props:scene)))))
     (perform act-perc-scn)))
 
-(defmacro pick-object (object &key stationary)
-  `(cpl:with-retry-counters ((retry-task 0))
+(defmacro pick-object (object &key stationary ignore-object-not-found)
+  `(cpl:with-retry-counters ((retry-task 3))
      (cpl:with-failure-handling
          ((cram-plan-failures:manipulation-failure (f)
             (declare (ignore f))
-            (cpl:do-retry retry-task
-              (ensure-arms-up)
-              (cpl:retry)))
+            (ensure-arms-up)
+            (cpl:retry))
           (cram-plan-failures:location-not-reached-failure (f)
             (declare (ignore f))
-            (cpl:do-retry retry-task
-              (ros-warn (longterm) "Cannot reach location. Retrying.")
-              (cpl:retry)))
+            (ros-warn (longterm) "Cannot reach location. Retrying.")
+            (cpl:retry))
           (cram-plan-failures:object-not-found (f)
             (declare (ignore f))
-            (cpl:do-retry retry-task
-              (ros-warn (longterm) "Object not found. Retrying.")
-              (cpl:retry))))
+            (cond (,ignore-object-not-found
+                   (cpl:do-retry retry-task
+                     (ros-warn (longterm) "Object not found. Retrying.")
+                     (cpl:retry)))
+                  (t (cpl:retry)))))
        ,(cond (stationary
                `(achieve `(cram-plan-library:object-picked ,,object)))
               (t
