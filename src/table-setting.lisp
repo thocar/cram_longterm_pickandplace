@@ -306,21 +306,18 @@
   (if (string= scene "one-object")
       (progn
         (set-scene-thomasthesis-one-object)
-        (roslisp::ros-info (Thomas-Thesis-Setting) "Set Scene with one object"))
-      )
+        (roslisp::ros-info (Thomas-Thesis-Setting) "Set Scene with one object")))
   (if (string= scene "experiment01")
       (progn 
         (set-scene-thomasthesis-experiment-01)
-        (roslisp::ros-info (Thomas-Thesis-Setting) "Set Experiment 01 Scene"))
-      )
+        (roslisp::ros-info (Thomas-Thesis-Setting) "Set Experiment 01 Scene")))
   (lazy-mapcar (lambda (x)
                  (destructuring-bind (obj-desig bringto) x
                    (declare (ignore bringto))
                    (lazy-mapcar (lambda (bdgs)
                                   (with-vars-bound (?num-of-hands) bdgs
                                   ?num-of-hands))
-                                (get-number-of-needed-hands obj-desig))
-                   ))
+                                (get-number-of-needed-hands obj-desig))))
                (extract-objectdesig-and-bringto)))
 
 ;; EIGENE FUNKTIONEN ENDE
@@ -335,22 +332,49 @@
   (if (string= scene "one-object")
       (progn
         (set-scene-thomasthesis-one-object)
-        (roslisp::ros-info (Thomas-Thesis-Setting) "Set Scene with one object"))
-      )
+        (roslisp::ros-info (Thomas-Thesis-Setting) "Set Scene with one object")))
   (if (string= scene "experiment01")
       (progn 
         (set-scene-thomasthesis-experiment-01)
-        (roslisp::ros-info (Thomas-Thesis-Setting) "Set Experiment 01 Scene"))
-      )
+        (roslisp::ros-info (Thomas-Thesis-Setting) "Set Experiment 01 Scene")))
   (lazy-mapcar (lambda (bdgs)
                  (destructuring-bind (obj-desig bring-to) bdgs
-                   ;; unless nutzen statt if / else
-                   ;; (unless (find-object-3 obj-desig)
                    (let ((object-found (cpl-impl:mapcar-clean #'identity (find-object-3 obj-desig))))
                      (unless object-found
                        (equate obj-desig object-found)
                        (pick-object object-found :ignore-object-not-found t)
                        (place-object object-found bring-to)))))
+               (extract-objectdesig-and-bringto)))
+
+(def-top-level-cram-function set-table-thomasthesis-02 (scene)
+  (if (string= scene "one-object")
+      (progn
+        (set-scene-thomasthesis-one-object)
+        (roslisp::ros-info (Thomas-Thesis-Setting) "Set Scene with one object")))
+  (if (string= scene "experiment01")
+      (progn 
+        (set-scene-thomasthesis-experiment-01)
+        (roslisp::ros-info (Thomas-Thesis-Setting) "Set Experiment 01 Scene")))
+  (lazy-mapcar (lambda (bdgs)
+                 (destructuring-bind (obj-desig bring-to) bdgs
+                   (let ((checked-table nil)
+                         (retry-counter 0))
+                     (loop while (< retry-counter 4)
+                                 do (if (< retry-counter 3)
+                                        (let ((object-found (cpl-impl:mapcar-clean #'identity (find-object-3 obj-desig))))
+                                          (unless object-found
+                                            (equate obj-desig object-found)
+                                            (pick-object object-found :ignore-object-not-found t)
+                                            (place-object object-found bring-to)))
+                                        (if (not checked-table)
+                                            (top-level
+                                              (with-designators ((o-loc (location `((desig-props:on Cupboard)
+                                                                                    (desig-props::name "kitchen-island"))))
+                                                                 (obj (object (desig:update-designator-properties `((desig-props::at ,o-loc))
+                                                                                                                  (description obj-desig)))))
+                                                (perceive-a obj :ignore-object-not-found t)
+                                                (setq checked-table t)))))
+                                    (setq retry-counter (1+ retry-counter))))))
                (extract-objectdesig-and-bringto)))
 
 ;; EIGENE PLÄNE ENDE
