@@ -262,7 +262,7 @@
                            obj)))))
                (get-objectlocation-from-object object-designator)))
 
-(defun find-object-3(object-designator)
+(defun search-object-at-object-locations(object-designator)
   (lazy-mapcar (lambda (bdgs)
                  (with-vars-bound (?obj-loc) bdgs
                    (if (or (string= ?obj-loc "fridge1")
@@ -282,7 +282,7 @@
                                     (declare (ignore f))
                                     (return-from p-block)))
                                ;; (return-from find-object (perceive-a object :ignore-object-not-found t))))
-                               (return-from find-object-3 (perceive-a obj :ignore-object-not-found t)))))))))
+                               (return-from search-object-at-object-locations (perceive-a obj :ignore-object-not-found t)))))))))
                (get-objectlocation-from-object object-designator)))
 
 
@@ -321,7 +321,7 @@
         (roslisp::ros-info (Thomas-Thesis-Setting) "Set Experiment 01 Scene")))
   (lazy-mapcar (lambda (bdgs)
                  (destructuring-bind (obj-desig bring-to) bdgs
-                   (let ((object-found (cpl-impl:mapcar-clean #'identity (find-object-3 obj-desig))))
+                   (let ((object-found (cpl-impl:mapcar-clean #'identity (search-object-at-object-locations obj-desig))))
                      (unless object-found
                        (equate obj-desig object-found)
                        (pick-object object-found :ignore-object-not-found t)
@@ -348,7 +348,7 @@
                                   (not object-found)
                                   (not checked-table))
                            do (if (< retry-counter 3)
-                                  (let ((object-found (cpl-impl:mapcar-clean #'identity (find-object-3 obj-desig))))
+                                  (let ((object-found (cpl-impl:mapcar-clean #'identity (search-object-at-object-locations obj-desig))))
                                     (unless object-found
                                       (equate obj-desig object-found)
                                       (pick-object object-found :ignore-object-not-found t)
