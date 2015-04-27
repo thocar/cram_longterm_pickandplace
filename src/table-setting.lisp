@@ -346,6 +346,7 @@
                        (place-object object-found bring-to)))))
                (extract-objectdesig-and-bringto)))
 
+
 (def-top-level-cram-function set-table-thomasthesis-02 (scene)
   (if (string= scene "one-object")
       (progn
@@ -358,23 +359,31 @@
   (lazy-mapcar (lambda (bdgs)
                  (destructuring-bind (obj-desig bring-to) bdgs
                    (let ((checked-table nil)
+                         (object-found nil)
                          (retry-counter 0))
-                     (loop while (< retry-counter 4)
-                                 do (if (< retry-counter 3)
-                                        (let ((object-found (cpl-impl:mapcar-clean #'identity (find-object-3 obj-desig))))
-                                          (unless object-found
-                                            (equate obj-desig object-found)
-                                            (pick-object object-found :ignore-object-not-found t)
-                                            (place-object object-found bring-to)))
-                                        (if (not checked-table)
-                                            (top-level
-                                              (with-designators ((o-loc (location `((desig-props:on Cupboard)
-                                                                                    (desig-props::name "kitchen-island"))))
-                                                                 (obj (object (desig:update-designator-properties `((desig-props::at ,o-loc))
-                                                                                                                  (description obj-desig)))))
-                                                (perceive-a obj :ignore-object-not-found t)
-                                                (setq checked-table t)))))
-                                    (setq retry-counter (1+ retry-counter))))))
+                     (loop while (and
+                                  (< retry-counter 4)
+                                  (not object-found)
+                                  (not checked-table))
+                           do (if (< retry-counter 3)
+                                  (let ((object-found (cpl-impl:mapcar-clean #'identity (find-object-3 obj-desig))))
+                                    (unless object-found
+                                      (equate obj-desig object-found)
+                                      (pick-object object-found :ignore-object-not-found t)
+                                      (place-object object-found bring-to)))
+                                  (if (not checked-table)
+                                      (top-level
+                                        (with-designators ((o-loc (location `((desig-props:on Cupboard)
+                                                                              (desig-props::name "kitchen-island"))))
+                                                           (obj (object (desig:update-designator-properties `((desig-props::at ,o-loc))
+                                                                                                            (description obj-desig)))))
+                                          (let ((object-found (perceive-a obj :ignore-object-not-found t)))
+                                            (unless object-found
+                                              (equate obj-desig object-found)
+                                              (pick-object object-found :ignore-object-not-found t)
+                                              (place-object object-found bring-to)))
+                                          (setq checked-table t)))))
+                              (setq retry-counter (1+ retry-counter))))))
                (extract-objectdesig-and-bringto)))
 
 ;; EIGENE PLÄNE ENDE
@@ -613,12 +622,6 @@
   (<- (location-details "fridge1" (in container)))
   (<- (location-details "drawer1" (in drawer)))
   (<- (location-details "kitchen_sink_block" (on Cupboard)))
-
-  ;; Number of needed grippers
-  (<- (num-of-hands bowl 2))
-
-  (<- (num-of-hands ?_ 1))
-  ;; EIGENER STUFF ENDE
   
   ;; General rules for table setting object placement
   (<- (center-relative-object-table-position bowl center-of))
@@ -667,8 +670,4 @@
 
   (<- (object-loc ?object ?obj-loc)
     (desig-prop ?object (type ?obj-type))
-    (object-position ?obj-type ?obj-loc))
-
-  (<- (number-of-hands ?object ?num-of-hands)
-    (desig-prop ?object (type ?obj-type))
-    (num-of-hands ?obj-type ?num-of-hands)))
+    (object-position ?obj-type ?obj-loc)))

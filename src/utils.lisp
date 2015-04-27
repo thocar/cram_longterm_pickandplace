@@ -483,10 +483,6 @@
 (defun get-objectlocation-from-object (object-designator)
   (crs:prolog `(object-loc ,object-designator ?obj-loc)))
 
-(defun get-number-of-needed-hands (object-designator)
-  (crs:prolog `(number-of-hands ,object-designator ?num-of-hands)))
-
-
 ;; EIGENE FUNKTIONEN ENDE
 
 (def-fact-group table-setting-situational-facts (table-setting-object)
@@ -659,4 +655,6 @@
   ;; Spatula: Carry with 1 arm
   (<- (object-carry-handles desig-props::spatula 1))
   ;; Milkbox: Carry with 1 arm
-  (<- (object-carry-handles desig-props::milkbox 1)))
+  (<- (object-carry-handles desig-props::milkbox 1))
+  ;; Spoon: Carry with 1 arm
+  (<- (object-carry-handles desig-props::spoon 1)))
