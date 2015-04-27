@@ -302,24 +302,6 @@
               (cpl-impl:mapcar-clean #'identity (force-ll (find-object-2 obj-desig)))))
           (extract-objectdesig-and-bringto)))
 
-(defun test-hands(scene)
-  (if (string= scene "one-object")
-      (progn
-        (set-scene-thomasthesis-one-object)
-        (roslisp::ros-info (Thomas-Thesis-Setting) "Set Scene with one object")))
-  (if (string= scene "experiment01")
-      (progn 
-        (set-scene-thomasthesis-experiment-01)
-        (roslisp::ros-info (Thomas-Thesis-Setting) "Set Experiment 01 Scene")))
-  (lazy-mapcar (lambda (x)
-                 (destructuring-bind (obj-desig bringto) x
-                   (declare (ignore bringto))
-                   (lazy-mapcar (lambda (bdgs)
-                                  (with-vars-bound (?num-of-hands) bdgs
-                                  ?num-of-hands))
-                                (get-number-of-needed-hands obj-desig))))
-               (extract-objectdesig-and-bringto)))
-
 ;; EIGENE FUNKTIONEN ENDE
 
 ;;;
