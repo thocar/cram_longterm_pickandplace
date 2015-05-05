@@ -285,6 +285,27 @@
                                (return-from search-object-at-object-locations (perceive-a obj :ignore-object-not-found t)))))))))
                (get-objectlocation-from-object object-designator)))
 
+;; Gibt ein Objekt aus einer Liste zurück, wenn es sich dabei um das gesuchte Objekt handelt
+(defun object-in-list (object-designator objects-list)
+  (if (not objects-list)
+      nil
+      ))
+
+;; Soll zum kitchen-island fahren. Ggf auch in drive-to umwandeln und eine Location übergeben lassen
+(defun drive-to-table ()
+  nil
+  )
+
+;; Gibt einen Bool zurück, ob loc1 näher am Roboter ist als loc2
+(defun is-distance-to-first-loc-shorter (loc1 loc2)
+  nil
+  )
+
+;; Soll an 3 Positionen auf dem kitchen-island perceiven (links, mitte, rechts)
+(defun perceive-table ()
+  nil
+  )
+
 
 (defun test-scene-one-object()
   (set-scene-thomasthesis-one-object)
@@ -354,9 +375,8 @@
                                       (pick-object object-found :ignore-object-not-found t)
                                       (place-object object-found bring-to)))
                                   (if (not checked-table)
-                                      (top-level
                                         (with-designators ((o-loc (location `((desig-props:on Cupboard)
-                                                                              (desig-props::name "kitchen-island"))))
+                                                                              (desig-props::name "kitchen_island"))))
                                                            (obj (object (desig:update-designator-properties `((desig-props::at ,o-loc))
                                                                                                             (description obj-desig)))))
                                           (let ((object-found (perceive-a obj :ignore-object-not-found t)))
@@ -364,9 +384,106 @@
                                               (equate obj-desig object-found)
                                               (pick-object object-found :ignore-object-not-found t)
                                               (place-object object-found bring-to)))
-                                          (setq checked-table t)))))
+                                          (setq checked-table t))))
                               (setq retry-counter (1+ retry-counter))))))
                (extract-objectdesig-and-bringto)))
+
+
+;; (def-top-level-cram-function set-table-thomasthesis-pseudo (scene)
+;;   (if (string= scene "one-object")
+;;       (progn
+;;         (set-scene-thomasthesis-one-object)
+;;         (roslisp::ros-info (Thomas-Thesis-Setting) "Set Scene with one object")))
+;;   (if (string= scene "experiment01")
+;;       (progn 
+;;         (set-scene-thomasthesis-experiment-01)
+;;         (roslisp::ros-info (Thomas-Thesis-Setting) "Set Experiment 01 Scene")))
+;;   (lazy-mapcar (lambda (bdgs)
+;;                  (destructuring-bind (obj-desig bring-to) bdgs
+;;                    (let ((checked-table nil)
+;;                          (object-found nil)
+;;                          (retry-counter 0)
+;;                          (objects-on-table nil))
+;;                      (loop while (and
+;;                                   (< retry-counter 4)
+;;                                   (not object-found)
+;;                                   (not checked-table))
+;;                            do (if (< retry-counter 3)
+;;                                   (let ((object-found (cpl-impl:mapcar-clean #'identity (search-object-at-object-locations obj-desig))))
+;;                                     (unless object-found
+;;                                       (equate obj-desig object-found)
+;;                                       (pick-object object-found :ignore-object-not-found t)
+;;                                       (place-object object-found bring-to)))
+;;                                   (if (not objects-on-table)
+;;                                       (top-level
+;;                                         (progn
+;;                                           (drive-to-table)
+;;                                           (setq objects-on-table (perceive-scene))
+;;                                           (let ((object-on-table (object-on-table obj-desig objects-on-table))
+;;                                                 (unless object-on-table
+;;                                                   (equate obj-desig object-on-table)
+;;                                                   (pick-object object-on-table :ignore-object-not-found t)
+;;                                                   (place-object object-on-table bring-to)))
+;;                                           (setq checked-table t))))
+;;                                       (progn
+;;                                         (let ((object-on-table (object-on-table obj-desig objects-on-table))
+;;                                               (unless object-on-table
+;;                                                 (equate obj-desig object-on-table)
+;;                                                 (pick-object object-on-table :ignore-object-not-found t)
+;;                                                 (place-object object-on-table bring-to)))))))
+;;                               (setq retry-counter (1+ retry-counter))))))
+;;                (extract-objectdesig-and-bringto)))
+
+(def-top-level-cram-function set-table-thomasthesis-with-distance-checking ()
+  (set-scene-thomasthesis-experiment-01)
+  (let ((checked-table nil)
+        (objects-on-table nil)
+        (loc-table (make-designator 'location `((desig-props::on Cupboard)
+                               (desig-props::name "kitchen_island"))))
+        (loc-sink-block (make-designator 'location `((desig-props::on Cupboard)
+                                    (desig-props::name "kitchen_sink_block")))))
+    (lazy-mapcar (lambda (bdgs)
+                   (destructuring-bind (obj-desig bring-to) bdgs
+                     (if (and
+                          (not checked-table)
+                          (is-distance-to-first-loc-shorter loc-table loc-sink-block))
+                         (progn
+                           (drive-to-table)
+                           (setq objects-on-table (perceive-table))
+                           (setq checked-table t)))
+                     (let ((obj-on-table (cpl-impl:mapcar-clean #'identity (object-in-list obj-desig objects-on-table)))
+                           (placed-object nil))
+                           ;; FRAGE: Funktioniert das so? Oder muss ich dafür eine Funktion schreiben, die einen Bool zurückgibt wenn obj-on-table nicht nil ist
+                       (if obj-on-table
+                           (progn
+                             (equate obj-desig obj-on-table)
+                             (pick-object obj-on-table :ignore-object-not-found t)
+                             (place-object obj-on-table bring-to)
+                             (setq placed-object t))
+                           (let ((retry-counter 0))
+                                 (loop while (and
+                                              (not placed-object)
+                                              (< retry-counter 4))
+                                       do (if (< retry-counter 3)
+                                              (let ((object-found (cpl-impl:mapcar-clean #'identity (search-object-at-object-locations obj-desig))))
+                                                (unless object-found
+                                                  (equate obj-desig object-found)
+                                                  (pick-object object-found :ignore-object-not-found t)
+                                                  (place-object object-found bring-to)
+                                                  (setq placed-object t)))
+                                              (if (not checked-table)
+                                                  (progn
+                                                    (drive-to-table)
+                                                    (setq objects-on-table (perceive-table))
+                                                    (setq checked-table t)
+                                                    (setq obj-on-table (cpl-impl:mapcar-clean #'identity (object-in-list obj-desig objects-on-table)))
+                                                    (unless obj-on-table
+                                                      (equate obj-desig obj-on-table)
+                                                      (pick-object obj-on-table :ignore-object-not-found t)
+                                                      (place-object obj-on-table bring-to)
+                                                      (setq placed-object t)))))))))))
+                 (extract-objectdesig-and-bringto))))
+        
 
 ;; EIGENE PLÄNE ENDE
 
@@ -613,6 +730,9 @@
   (<- (center-relative-object-table-position spoon left-of))
   (<- (center-relative-object-table-position cup left-of))
   (<- (center-relative-object-table-position cup behind-of))
+  (<- (center-relative-object-table-position muesli right-of))
+  (<- (center-relative-object-table-position muesli behind-of))
+  (<- (center-relative-object-table-position milkbox behind-of))
 
   ;; EIGENE TABLE-POSITIONEN ANFANG
   (<- (center-relative-object-table-position pizza_cutter behind-of))
