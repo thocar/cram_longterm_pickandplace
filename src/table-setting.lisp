@@ -252,13 +252,10 @@
                        (progn
                          (roslisp::ros-info (find-object) "Can't find ~a at this location: ~a" (prin1-to-string (desig-prop-value object-designator 'type)) ?obj-loc)
                          nil)
-                       ;; (common-lisp::concatenate 'string "Found object at this location: " (rest obj-loc)))))
-                       ;; (make-designator 'object `(,@object-designator ,(make-designator 'location `(at ,(rest obj-loc))))))))
                        (top-level
                          (with-designators ((o-loc (location `((desig-props::on Cupboard)
                                                                (desig-props::name ,?obj-loc))))
                                             (obj (object (desig:update-designator-properties `((desig-props::at ,o-loc)) (description object-designator)))))
-                           ;; object))))
                            obj)))))
                (get-objectlocation-from-object object-designator)))
 
@@ -267,7 +264,6 @@
                  (with-vars-bound (?obj-loc) bdgs
                    (if (or (string= ?obj-loc "fridge1")
                            (string= ?obj-loc "drawer1"))
-                       ;; (print (common-lisp::concatenate 'string "Can't find " (prin1-to-string (desig-prop-value object-designator 'type)) " at this location: " ?obj-loc))
                        (progn
                          (roslisp::ros-info (find-object) "Can't find ~a at this location: ~a" (prin1-to-string (desig-prop-value object-designator 'type)) ?obj-loc)
                          nil) 
@@ -281,7 +277,6 @@
                                  ((cram-plan-failures:object-not-found (f)
                                     (declare (ignore f))
                                     (return-from p-block)))
-                               ;; (return-from find-object (perceive-a object :ignore-object-not-found t))))
                                (return-from search-object-at-object-locations (perceive-a obj :ignore-object-not-found t)))))))))
                (get-objectlocation-from-object object-designator)))
 
@@ -414,51 +409,6 @@
                               (setq retry-counter (1+ retry-counter))))))
                (extract-objectdesig-and-bringto)))
 
-
-;; (def-top-level-cram-function set-table-thomasthesis-pseudo (scene)
-;;   (if (string= scene "one-object")
-;;       (progn
-;;         (set-scene-thomasthesis-one-object)
-;;         (roslisp::ros-info (Thomas-Thesis-Setting) "Set Scene with one object")))
-;;   (if (string= scene "experiment01")
-;;       (progn 
-;;         (set-scene-thomasthesis-experiment-01)
-;;         (roslisp::ros-info (Thomas-Thesis-Setting) "Set Experiment 01 Scene")))
-;;   (lazy-mapcar (lambda (bdgs)
-;;                  (destructuring-bind (obj-desig bring-to) bdgs
-;;                    (let ((checked-table nil)
-;;                          (object-found nil)
-;;                          (retry-counter 0)
-;;                          (objects-on-table nil))
-;;                      (loop while (and
-;;                                   (< retry-counter 4)
-;;                                   (not object-found)
-;;                                   (not checked-table))
-;;                            do (if (< retry-counter 3)
-;;                                   (let ((object-found (cpl-impl:mapcar-clean #'identity (search-object-at-object-locations obj-desig))))
-;;                                     (unless object-found
-;;                                       (equate obj-desig object-found)
-;;                                       (pick-object object-found :ignore-object-not-found t)
-;;                                       (place-object object-found bring-to)))
-;;                                   (if (not objects-on-table)
-;;                                       (top-level
-;;                                         (progn
-;;                                           (drive-to-table)
-;;                                           (setq objects-on-table (perceive-scene))
-;;                                           (let ((object-on-table (object-on-table obj-desig objects-on-table))
-;;                                                 (unless object-on-table
-;;                                                   (equate obj-desig object-on-table)
-;;                                                   (pick-object object-on-table :ignore-object-not-found t)
-;;                                                   (place-object object-on-table bring-to)))
-;;                                           (setq checked-table t))))
-;;                                       (progn
-;;                                         (let ((object-on-table (object-on-table obj-desig objects-on-table))
-;;                                               (unless object-on-table
-;;                                                 (equate obj-desig object-on-table)
-;;                                                 (pick-object object-on-table :ignore-object-not-found t)
-;;                                                 (place-object object-on-table bring-to)))))))
-;;                               (setq retry-counter (1+ retry-counter))))))
-;;                (extract-objectdesig-and-bringto)))
 
 (def-top-level-cram-function set-table-thomasthesis-with-distance-checking ()
   (set-scene-thomasthesis-experiment-01)
