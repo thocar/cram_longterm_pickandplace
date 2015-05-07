@@ -468,17 +468,17 @@
 
 ;; EIGENE FUNKTIONEN ANFANG
 (defun extract-objectdesig-and-bringto ()
-  (force-ll (lazy-mapcar (lambda (bdgs)
-                           (with-vars-bound (?o) bdgs
-                             (let ((bring-to (desig-prop-value ?o 'bring-to))
-                                   ;;(object-location (desig-prop-value ?o 'object-location))
-                                   (desc (remove-if (lambda (item)
-                                                      (or (eql (car item) 'object-location)
-                                                      (eql (car item) 'bring-to)))
-                                                      (description ?o))))
-                               ;; `(,(make-designator 'object desc) ,object-location ,bring-to))))
-                               `(,(make-designator 'object desc) ,bring-to))))
-                         (crs:prolog `(required-object ?o)))))
+  (lazy-mapcar (lambda (bdgs)
+                 (with-vars-bound (?o) bdgs
+                   (let ((bring-to (desig-prop-value ?o 'bring-to))
+                         ;;(object-location (desig-prop-value ?o 'object-location))
+                         (desc (remove-if (lambda (item)
+                                            (or (eql (car item) 'object-location)
+                                                (eql (car item) 'bring-to)))
+                                          (description ?o))))
+                     ;; `(,(make-designator 'object desc) ,object-location ,bring-to))))
+                     `(,(make-designator 'object desc) ,bring-to))))
+               (crs:prolog `(required-object ?o))))
 
 (defun get-objectlocation-from-object (object-designator)
   (crs:prolog `(object-loc ,object-designator ?obj-loc)))

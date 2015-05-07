@@ -262,7 +262,7 @@
                            obj)))))
                (get-objectlocation-from-object object-designator)))
 
-(defun search-object-at-object-locations(object-designator)
+(defun search-object-at-object-locations (object-designator)
   (lazy-mapcar (lambda (bdgs)
                  (with-vars-bound (?obj-loc) bdgs
                    (if (or (string= ?obj-loc "fridge1")
@@ -286,22 +286,35 @@
                (get-objectlocation-from-object object-designator)))
 
 ;; Gibt ein Objekt aus einer Liste zurück, wenn es sich dabei um das gesuchte Objekt handelt
+;; TODO: Derzeit noch x-1 nils in der Liste, wenn das Object drin ist. Wie kann ich das umgehen?
+;; Würde gern nur das Objekt zurückgeben wenn es drin ist und ansonsten einfach NIL
 (defun object-in-list (object-designator objects-list)
-  (if (not objects-list)
-      nil
-      ))
+  (let ((object-found nil))
+    (if (not objects-list)
+        nil
+        (lazy-mapcar (lambda (x)
+                  (destructuring-bind (object bringto) x
+                    (declare (ignore bringto))
+                    (if (and
+                         (not object-found)
+                         (equal (desig-prop-value object 'type) (desig-prop-value object-designator 'type)))
+                        (progn
+                          (setq object-found object)
+                          object-found)))) 
+                objects-list))))
 
-;; Soll zum kitchen-island fahren. Ggf auch in drive-to umwandeln und eine Location übergeben lassen
+;; Soll zum kitchen-island fahren. Ggf auch in drive-to umwandeln und eine Location übergeben lassen.
 (defun drive-to-table ()
   nil
   )
 
-;; Gibt einen Bool zurück, ob loc1 näher am Roboter ist als loc2
-(defun is-distance-to-first-loc-shorter (loc1 loc2)
+;; Gibt die Loc zurück, welche näher am Roboter ist
+(defun get-nearest-location (loc1 loc2)
   nil
   )
 
 ;; Soll an 3 Positionen auf dem kitchen-island perceiven (links, mitte, rechts)
+;; Gibt eine Liste von Objekten zurück, die perceived wurden
 (defun perceive-table ()
   nil
   )
@@ -322,6 +335,19 @@
               (declare (ignore bringto))
               (cpl-impl:mapcar-clean #'identity (force-ll (find-object-2 obj-desig)))))
           (extract-objectdesig-and-bringto)))
+
+(defun test-object-in-list ()
+  (set-scene-thomasthesis-experiment-01)
+  (let ((obj-list (extract-objectdesig-and-bringto))
+        (obj (make-designator 'object `((desig-props::type milkbox)
+                                        (desig-props::for-guest tim)))))
+    (object-in-list obj obj-list)))
+
+(defun test-objectlocation-from-object ()
+  (set-scene-thomasthesis-experiment-01)
+  (let ((obj (make-designator 'object `((desig-props::type milkbox)
+                                        (desig-props::for-guest tim)))))
+    (get-objectlocation-from-object obj)))
 
 ;; EIGENE FUNKTIONEN ENDE
 
@@ -439,14 +465,14 @@
   (let ((checked-table nil)
         (objects-on-table nil)
         (loc-table (make-designator 'location `((desig-props::on Cupboard)
-                               (desig-props::name "kitchen_island"))))
+                                                (desig-props::name "kitchen_island"))))
         (loc-sink-block (make-designator 'location `((desig-props::on Cupboard)
-                                    (desig-props::name "kitchen_sink_block")))))
+                                                     (desig-props::name "kitchen_sink_block")))))
     (lazy-mapcar (lambda (bdgs)
                    (destructuring-bind (obj-desig bring-to) bdgs
                      (if (and
                           (not checked-table)
-                          (is-distance-to-first-loc-shorter loc-table loc-sink-block))
+                          (get-nearest-location loc-table loc-sink-block))
                          (progn
                            (drive-to-table)
                            (setq objects-on-table (perceive-table))
