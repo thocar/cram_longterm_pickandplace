@@ -244,6 +244,7 @@
 
 ;; EIGENE FUNKTIONEN ANFANG
 
+;; Testfunktion, kann später raus
 (defun find-object-2(object-designator)
   (lazy-mapcar (lambda (bdgs)
                  (with-vars-bound (?obj-loc) bdgs
@@ -259,6 +260,7 @@
                            obj)))))
                (get-objectlocation-from-object object-designator)))
 
+;; Sucht ein Objekt an den vorgesehenen Locations
 (defun search-object-at-object-locations (object-designator)
   (lazy-mapcar (lambda (bdgs)
                  (with-vars-bound (?obj-loc) bdgs
@@ -280,9 +282,96 @@
                                (return-from search-object-at-object-locations (perceive-a obj :ignore-object-not-found t)))))))))
                (get-objectlocation-from-object object-designator)))
 
+(defun current-robot-pose ()
+  (cl-tf2:ensure-pose-stamped-transformed
+   *tf2* (tf:pose->pose-stamped "base_footprint" 0.0
+                                (tf:make-identity-pose))
+   "map"))
+
+(defun semantic-object-pose (object-name)
+  (let* ((island (make-designator
+                  'object `((desig-props:name ,object-name))))
+         (object (first (sem-map-utils:designator->semantic-map-objects
+                         island)))
+         (pose (sem-map-utils:pose object)))
+    pose))
+
+(defun distance-to-semantic-object (object-name)
+  (let* ((robot-pose (current-robot-pose))
+         (semantic-object-pose (semantic-object-pose object-name)))
+    (tf:v-dist (tf:origin robot-pose)
+               (tf:origin semantic-object-pose))))
+
+(defun sorted-semantic-object-distances (object-names)
+  (sort (mapcar (lambda (object-name)
+                  (cons
+                   object-name
+                   (distance-to-semantic-object object-name)))
+                object-names)
+        (lambda (obj-1 obj-2)
+          (destructuring-bind (obj-1-name . obj-1-distance) obj-1
+            (declare (ignore obj-1-name))
+            (destructuring-bind (obj-2-name . obj-2-distance) obj-2
+              (declare (ignore obj-2-name))
+              (< obj-1-distance obj-2-distance))))))
+
+(defmacro in-front-of (location try-indefinitely &body body)
+  `(cpl:with-retry-counters ((ctr 3))
+     (cpl:with-failure-handling
+         ((cram-plan-failures:location-not-reached-failure (f)
+            (declare (ignore f))
+            (when ,try-indefinitely
+              (cpl:do-retry ctr
+                (cpl:retry))
+              (return t))
+            (unless ,try-indefinitely
+              (return t))))
+       (at-location (,location)
+         ,@body))))
+
+(defun go-in-front-of-island ()
+  (in-front-of
+   (desig:make-designator
+    'location
+    `((desig-props::pose
+       ,(cl-tf:pose->pose-stamped
+         "/map" 0.0
+         (cl-transforms:make-pose
+          (cl-transforms:make-3d-vector -0.323 1.137 0.0)
+          (cl-transforms:make-quaternion 0 0 1 0.03))))))
+   t))
+
+(defun look-at-pose (pose)
+  (achieve `(cram-plan-library:looking-at ,pose)))
+
+(defun perceive-all (object &key stationary (move-head t))
+  (cpl:with-failure-handling
+      ((cram-plan-failures:object-not-found (f)
+         (declare (ignore f))
+         (ros-warn (longterm) "Object not found. Retrying.")
+         (cpl:retry)))
+    (cond (stationary
+           (let ((at (desig-prop-value object 'desig-props:at)))
+             (when move-head
+               (achieve `(cram-plan-library:looking-at (reference at))))
+             (perceive-object
+              'cram-plan-library:currently-visible object)))
+          (t (cpl:with-failure-handling
+                 ((cram-plan-failures:location-not-reached-failure (f)
+                    (declare (ignore f))
+                    (cpl:retry)))
+               (perceive-object 'cram-plan-library:all object))))))
+
+;; Gibt eine Liste von Objekten zurück, die auf dem Tisch perceived wurden
+(defun perceive-table ()
+  (look-at-pose (tf-types:pose->pose-stamped "map" 0.0 (semantic-object-pose "kitchen_island")))
+  (perceive-all (make-designator 'object nil))
+ )
+
 ;; Gibt ein Objekt aus einer Liste zurück, wenn es sich dabei um das gesuchte Objekt handelt
 ;; TODO: Derzeit noch x-1 nils in der Liste, wenn das Object drin ist. Wie kann ich das umgehen?
 ;; Würde gern nur das Objekt zurückgeben wenn es drin ist und ansonsten einfach NIL
+;; TODO2: Umbauen auf find
 (defun object-in-list (object-designator objects-list)
   (let ((object-found nil))
     (if (not objects-list)
@@ -298,22 +387,23 @@
                           object-found)))) 
                 objects-list))))
 
-;; Soll zum kitchen-island fahren. Ggf auch in drive-to umwandeln und eine Location übergeben lassen.
-(defun drive-to-table ()
-  nil
-  )
 
-;; Gibt die Loc zurück, welche näher am Roboter ist
-(defun get-nearest-location (loc1 loc2)
-  nil
-  )
-
-;; Soll an 3 Positionen auf dem kitchen-island perceiven (links, mitte, rechts)
-;; Gibt eine Liste von Objekten zurück, die perceived wurden
-(defun perceive-table ()
-  nil
-  )
-
+(defun go-forward (&optional (distance 0.3))
+  (labels ((move-base-relative-pose (vector)
+             (let* ((base-id
+                      (cl-tf:pose->pose-stamped
+                       "base_footprint" 0.0
+                       (cl-tf:make-pose vector (cl-tf:euler->quaternion))))
+                    (action (make-designator
+                             'action `((desig-props:type
+                                        desig-props:navigation)
+                                       (desig-props:goal
+                                        ,(make-designator
+                                          'location
+                                          `((desig-props:pose
+                                             ,base-id))))))))
+                 (perform action))))
+    (move-base-relative-pose (tf:make-3d-vector distance 0 0))))
 
 (defun test-scene-one-object()
   (set-scene-thomasthesis-one-object)
@@ -413,23 +503,19 @@
 (def-top-level-cram-function set-table-thomasthesis-with-distance-checking ()
   (set-scene-thomasthesis-experiment-01)
   (let ((checked-table nil)
-        (objects-on-table nil)
-        (loc-table (make-designator 'location `((desig-props::on Cupboard)
-                                                (desig-props::name "kitchen_island"))))
-        (loc-sink-block (make-designator 'location `((desig-props::on Cupboard)
-                                                     (desig-props::name "kitchen_sink_block")))))
+        (objects-on-table nil))
     (lazy-mapcar (lambda (bdgs)
                    (destructuring-bind (obj-desig bring-to) bdgs
                      (if (and
                           (not checked-table)
-                          (get-nearest-location loc-table loc-sink-block))
+                          ;; sollte so passen, oder?
+                          (equal "kitchen_island" (first (sorted-semantic-object-distances '("kitchen_sink_block" "kitchen_island")))))
                          (progn
-                           (drive-to-table)
+                           (go-in-front-of-island)
                            (setq objects-on-table (perceive-table))
                            (setq checked-table t)))
                      (let ((obj-on-table (cpl-impl:mapcar-clean #'identity (object-in-list obj-desig objects-on-table)))
                            (placed-object nil))
-                           ;; FRAGE: Funktioniert das so? Oder muss ich dafür eine Funktion schreiben, die einen Bool zurückgibt wenn obj-on-table nicht nil ist
                        (if obj-on-table
                            (progn
                              (equate obj-desig obj-on-table)
@@ -437,27 +523,27 @@
                              (place-object obj-on-table bring-to)
                              (setq placed-object t))
                            (let ((retry-counter 0))
-                                 (loop while (and
-                                              (not placed-object)
-                                              (< retry-counter 4))
-                                       do (if (< retry-counter 3)
-                                              (let ((object-found (cpl-impl:mapcar-clean #'identity (search-object-at-object-locations obj-desig))))
-                                                (unless object-found
-                                                  (equate obj-desig object-found)
-                                                  (pick-object object-found :ignore-object-not-found t)
-                                                  (place-object object-found bring-to)
-                                                  (setq placed-object t)))
-                                              (if (not checked-table)
-                                                  (progn
-                                                    (drive-to-table)
-                                                    (setq objects-on-table (perceive-table))
-                                                    (setq checked-table t)
-                                                    (setq obj-on-table (cpl-impl:mapcar-clean #'identity (object-in-list obj-desig objects-on-table)))
-                                                    (unless obj-on-table
-                                                      (equate obj-desig obj-on-table)
-                                                      (pick-object obj-on-table :ignore-object-not-found t)
-                                                      (place-object obj-on-table bring-to)
-                                                      (setq placed-object t)))))))))))
+                             (loop while (and
+                                          (not placed-object)
+                                          (< retry-counter 4))
+                                   do (if (< retry-counter 3)
+                                          (let ((object-found (cpl-impl:mapcar-clean #'identity (search-object-at-object-locations obj-desig))))
+                                            (unless object-found
+                                              (equate obj-desig object-found)
+                                              (pick-object object-found :ignore-object-not-found t)
+                                              (place-object object-found bring-to)
+                                              (setq placed-object t)))
+                                          (if (not checked-table)
+                                              (progn
+                                                (go-in-front-of-island)
+                                                (setq objects-on-table (perceive-table))
+                                                (setq checked-table t)
+                                                (setq obj-on-table (cpl-impl:mapcar-clean #'identity (object-in-list obj-desig objects-on-table)))
+                                                (unless obj-on-table
+                                                  (equate obj-desig obj-on-table)
+                                                  (pick-object obj-on-table :ignore-object-not-found t)
+                                                  (place-object obj-on-table bring-to)
+                                                  (setq placed-object t)))))))))))
                  (extract-objectdesig-and-bringto))))
         
 
@@ -620,6 +706,9 @@
 
   (<- (preference carol dish milk)
     (context-prop meal-time dinner))
+
+  (<- (preference max dish milk)
+    (context-prop meal-time breakfast))
   ;; EIGENE PREFERENCES ENDE
   
   ;; Who sits where
@@ -634,6 +723,7 @@
   (<- (preference mary seat 1))
 
   ;; EIGENE PERSONEN ANFANG
+  (<- (perference max seat 1))
   (<- (preference bob seat 3))
   (<- (preference alice seat 4))
   
@@ -647,10 +737,10 @@
   ;; EIGENE PERSONEN ENDE
   
   ;; Objects for meals
-  (<- (required-meal-object muesli bowl))
-  (<- (required-meal-object muesli muesli))
+  ;; (<- (required-meal-object muesli bowl))
+  ;; (<- (required-meal-object muesli muesli))
   (<- (required-meal-object muesli milkbox))
-  (<- (required-meal-object muesli spoon))
+  ;; (<- (required-meal-object muesli spoon))
   
   (<- (required-meal-object bread knife))
   (<- (required-meal-object bread plate))
