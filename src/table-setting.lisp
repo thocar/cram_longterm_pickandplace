@@ -422,7 +422,7 @@
           (extract-objectdesig-and-bringto)))
 
 (defun test-object-in-list ()
-  (set-scene-thomasthesis-experiment-01)
+  (set-scene-thomasthesis-test-01 )
   (let ((obj-list (extract-objectdesig-and-bringto))
         (obj (make-designator 'object `((desig-props::type milkbox)
                                         (desig-props::for-guest tim)))))
@@ -430,7 +430,7 @@
 
 (defun test-objectlocation-from-object ()
   (set-scene-thomasthesis-experiment-01)
-  (let ((obj (make-designator 'object `((desig-props::type milkbox)
+  (let ((obj (make-designator 'object `((desig-props::type bowl)
                                         (desig-props::for-guest tim)))))
     (get-objectlocation-from-object obj)))
 
