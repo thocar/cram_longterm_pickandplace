@@ -244,22 +244,6 @@
 
 ;; EIGENE FUNKTIONEN ANFANG
 
-;; Testfunktion, kann später raus
-(defun find-object-2(object-designator)
-  (lazy-mapcar (lambda (bdgs)
-                 (with-vars-bound (?obj-loc) bdgs
-                   (if (or (string= ?obj-loc "fridge1")
-                           (string= ?obj-loc "drawer1"))
-                       (progn
-                         (roslisp::ros-info (find-object) "Can't find ~a at this location: ~a" (prin1-to-string (desig-prop-value object-designator 'type)) ?obj-loc)
-                         nil)
-                       (top-level
-                         (with-designators ((o-loc (location `((desig-props::on Cupboard)
-                                                               (desig-props::name ,?obj-loc))))
-                                            (obj (object (desig:update-designator-properties `((desig-props::at ,o-loc)) (description object-designator)))))
-                           obj)))))
-               (get-objectlocation-from-object object-designator)))
-
 ;; Sucht ein Objekt an den vorgesehenen Locations
 (defun search-object-at-object-locations (object-designator)
   (lazy-mapcar (lambda (bdgs)
@@ -376,7 +360,7 @@
   (let ((object-found nil))
     (if (not objects-list)
         nil
-        (lazy-mapcar (lambda (x)
+        (cpl-impl:mapcar-clean #'identity (force-ll (lazy-mapcar (lambda (x)
                   (destructuring-bind (object bringto) x
                     (declare (ignore bringto))
                     (if (and
@@ -385,7 +369,7 @@
                         (progn
                           (setq object-found object)
                           object-found)))) 
-                objects-list))))
+                objects-list))))))
 
 
 (defun go-forward (&optional (distance 0.3))
@@ -405,6 +389,7 @@
                  (perform action))))
     (move-base-relative-pose (tf:make-3d-vector distance 0 0))))
 
+;; Testfunktionen
 (defun test-scene-one-object()
   (set-scene-thomasthesis-one-object)
   (mapcar (lambda (bdgs)
@@ -422,7 +407,7 @@
           (extract-objectdesig-and-bringto)))
 
 (defun test-object-in-list ()
-  (set-scene-thomasthesis-test-01 )
+  (set-scene-thomasthesis-experiment-01 )
   (let ((obj-list (extract-objectdesig-and-bringto))
         (obj (make-designator 'object `((desig-props::type milkbox)
                                         (desig-props::for-guest tim)))))
@@ -430,9 +415,24 @@
 
 (defun test-objectlocation-from-object ()
   (set-scene-thomasthesis-experiment-01)
-  (let ((obj (make-designator 'object `((desig-props::type bowl)
+  (let ((obj (make-designator 'object `((desig-props::type milkbox)
                                         (desig-props::for-guest tim)))))
     (get-objectlocation-from-object obj)))
+
+(defun find-object-2(object-designator)
+  (lazy-mapcar (lambda (bdgs)
+                 (with-vars-bound (?obj-loc) bdgs
+                   (if (or (string= ?obj-loc "fridge1")
+                           (string= ?obj-loc "drawer1"))
+                       (progn
+                         (roslisp::ros-info (find-object) "Can't find ~a at this location: ~a" (prin1-to-string (desig-prop-value object-designator 'type)) ?obj-loc)
+                         nil)
+                       (top-level
+                         (with-designators ((o-loc (location `((desig-props::on Cupboard)
+                                                               (desig-props::name ,?obj-loc))))
+                                            (obj (object (desig:update-designator-properties `((desig-props::at ,o-loc)) (description object-designator)))))
+                           obj)))))
+               (get-objectlocation-from-object object-designator)))
 
 ;; EIGENE FUNKTIONEN ENDE
 
@@ -514,7 +514,7 @@
                            (go-in-front-of-island)
                            (setq objects-on-table (perceive-table))
                            (setq checked-table t)))
-                     (let ((obj-on-table (cpl-impl:mapcar-clean #'identity (object-in-list obj-desig objects-on-table)))
+                     (let ((obj-on-table (object-in-list obj-desig objects-on-table))
                            (placed-object nil))
                        (if obj-on-table
                            (progn
@@ -538,7 +538,7 @@
                                                 (go-in-front-of-island)
                                                 (setq objects-on-table (perceive-table))
                                                 (setq checked-table t)
-                                                (setq obj-on-table (cpl-impl:mapcar-clean #'identity (object-in-list obj-desig objects-on-table)))
+                                                (setq obj-on-table (object-in-list obj-desig objects-on-table))
                                                 (unless obj-on-table
                                                   (equate obj-desig obj-on-table)
                                                   (pick-object obj-on-table :ignore-object-not-found t)
@@ -798,7 +798,7 @@
   (<- (center-relative-object-table-position cup behind-of))
   (<- (center-relative-object-table-position muesli right-of))
   (<- (center-relative-object-table-position muesli behind-of))
-  (<- (center-relative-object-table-position milkbox behind-of))
+  ;; (<- (center-relative-object-table-position milkbox behind-of))
 
   ;; EIGENE TABLE-POSITIONEN ANFANG
   (<- (center-relative-object-table-position pizza_cutter behind-of))
