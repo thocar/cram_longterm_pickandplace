@@ -71,7 +71,7 @@
   (gethash detail *scene-context*))
 
 (defun set-scene-1 ()
-  (set-scene-detail 'guests `(tim))
+  (set-scene-detail 'guests `(bob))
   (set-scene-detail 'meal-time 'breakfast)
   (set-scene-detail 'week-day 'saturday))
 
@@ -246,25 +246,29 @@
 
 ;; Sucht ein Objekt an den vorgesehenen Locations
 (defun search-object-at-object-locations (object-designator)
-  (lazy-mapcar (lambda (bdgs)
-                 (with-vars-bound (?obj-loc) bdgs
-                   (if (or (string= ?obj-loc "fridge1")
-                           (string= ?obj-loc "drawer1"))
-                       (progn
-                         (roslisp::ros-info (find-object) "Can't find ~a at this location: ~a" (prin1-to-string (desig-prop-value object-designator 'type)) ?obj-loc)
-                         nil) 
-                       (top-level
-                         (with-designators ((o-loc (location `((desig-props::on Cupboard)
-                                                               (desig-props::name ,?obj-loc))))
-                                            (obj (object (desig:update-designator-properties `((desig-props::at ,o-loc))
-                                                                                             (description object-designator)))))
-                           (block p-block
-                             (cpl-impl:with-failure-handling
-                                 ((cram-plan-failures:object-not-found (f)
-                                    (declare (ignore f))
-                                    (return-from p-block)))
-                               (return-from search-object-at-object-locations (perceive-a obj :ignore-object-not-found t)))))))))
-               (get-objectlocation-from-object object-designator)))
+  (loop for bdgs in (force-ll (get-objectlocation-from-object object-designator))
+        with done = nil
+        when (not done)
+          collect
+          (with-vars-bound (?obj-loc) bdgs
+            (if (or (string= ?obj-loc "fridge1")
+                    (string= ?obj-loc "drawer1"))
+                (progn
+                  (roslisp::ros-info (search-object) "Can't find ~a at this location: ~a" (prin1-to-string (desig-prop-value object-designator 'type)) ?obj-loc)
+                  nil)
+                (with-designators ((o-loc (location `((desig-props::on Cupboard)
+                                                      (desig-props::name ,?obj-loc))))
+                                   (obj (object (desig:update-designator-properties `((desig-props::at ,o-loc))
+                                                                                    (description object-designator)))))
+                  (roslisp:ros-info (search-object) "in top level")
+                  (block p-block
+                    (cpl-impl:with-failure-handling
+                        ((cram-plan-failures:object-not-found (f)
+                           (declare (ignore f))
+                           (return-from p-block)))
+                      (unwind-protect
+                           (perceive-a obj :ignore-object-not-found t :stationary t)
+                        (setf done t)))))))))
 
 (defun current-robot-pose ()
   (cl-tf2:ensure-pose-stamped-transformed
@@ -323,7 +327,7 @@
          (cl-transforms:make-pose
           (cl-transforms:make-3d-vector -0.323 1.137 0.0)
           (cl-transforms:make-quaternion 0 0 1 0.03))))))
-   t))
+   nil))
 
 (defun look-at-pose (pose)
   (achieve `(cram-plan-library:looking-at ,pose)))
@@ -348,29 +352,21 @@
 
 ;; Gibt eine Liste von Objekten zurück, die auf dem Tisch perceived wurden
 (defun perceive-table ()
-  (look-at-pose (tf-types:pose->pose-stamped "map" 0.0 (semantic-object-pose "kitchen_island")))
-  (perceive-all (make-designator 'object nil))
+  (let* ((pose (semantic-object-pose "kitchen_island"))
+         (pose2 (cl-transforms:make-pose
+                 (cl-transforms:v+ (cl-transforms:origin pose) (cl-transforms:make-3d-vector 0 0 (cl-transforms:z (cl-transforms:origin pose))))
+                 (cl-transforms:orientation pose)))
+         (pose3 (tf-types:pose->pose-stamped "map" 0.0 pose2)))
+    (look-at-pose pose3))
+  (perceive-all (make-designator 'object nil) :stationary t :move-head nil)
  )
 
 ;; Gibt ein Objekt aus einer Liste zurück, wenn es sich dabei um das gesuchte Objekt handelt
-;; TODO: Derzeit noch x-1 nils in der Liste, wenn das Object drin ist. Wie kann ich das umgehen?
-;; Würde gern nur das Objekt zurückgeben wenn es drin ist und ansonsten einfach NIL
-;; TODO2: Umbauen auf find
 (defun object-in-list (object-designator objects-list)
-  (let ((object-found nil))
-    (if (not objects-list)
-        nil
-        (cpl-impl:mapcar-clean #'identity (force-ll (lazy-mapcar (lambda (x)
-                  (destructuring-bind (object bringto) x
-                    (declare (ignore bringto))
-                    (if (and
-                         (not object-found)
-                         (equal (desig-prop-value object 'type) (desig-prop-value object-designator 'type)))
-                        (progn
-                          (setq object-found object)
-                          object-found)))) 
-                objects-list))))))
-
+  (find object-designator objects-list
+        :test (lambda (a b)
+                (equal (desig-prop-value a 'type)
+                       (desig-prop-value b 'type)))))
 
 (defun go-forward (&optional (distance 0.3))
   (labels ((move-base-relative-pose (vector)
@@ -395,7 +391,7 @@
   (mapcar (lambda (bdgs)
             (destructuring-bind (obj-desig bringto) bdgs
               (declare (ignore bringto))
-              (cpl-impl:mapcar-clean #'identity (force-ll (find-object-2 obj-desig)))))
+              (cpl-impl:mapcar-clean #'identity (force-ll (find-object obj-desig)))))
           (extract-objectdesig-and-bringto)))
 
 (defun test-scene-experiment-01()
@@ -403,14 +399,14 @@
   (mapcar (lambda (bdgs)
             (destructuring-bind (obj-desig bringto) bdgs
               (declare (ignore bringto))
-              (cpl-impl:mapcar-clean #'identity (force-ll (find-object-2 obj-desig)))))
+              (cpl-impl:mapcar-clean #'identity (force-ll (find-object obj-desig)))))
           (extract-objectdesig-and-bringto)))
 
 (defun test-object-in-list ()
-  (set-scene-thomasthesis-experiment-01 )
+  (set-scene-thomasthesis-test-02)
   (let ((obj-list (extract-objectdesig-and-bringto))
-        (obj (make-designator 'object `((desig-props::type milkbox)
-                                        (desig-props::for-guest tim)))))
+        (obj (make-designator 'object `((desig-props::type knife)
+                                        (desig-props::for-guest bob)))))
     (object-in-list obj obj-list)))
 
 (defun test-objectlocation-from-object ()
@@ -419,7 +415,7 @@
                                         (desig-props::for-guest tim)))))
     (get-objectlocation-from-object obj)))
 
-(defun find-object-2(object-designator)
+(defun find-object(object-designator)
   (lazy-mapcar (lambda (bdgs)
                  (with-vars-bound (?obj-loc) bdgs
                    (if (or (string= ?obj-loc "fridge1")
@@ -433,6 +429,21 @@
                                             (obj (object (desig:update-designator-properties `((desig-props::at ,o-loc)) (description object-designator)))))
                            obj)))))
                (get-objectlocation-from-object object-designator)))
+
+(defun bt-selector (loc-list)
+  (cond ((equal (first loc-list) "kitchen_island") "Drive to kitchen_island")
+        ((equal (first loc-list) "kitchen_sink_block") "Search at kitchen_sink_block")))
+
+(defun bt-sequence ()
+  (let ((obj (make-designator 'object `((desig-props::type milkbox)
+                                        (desig-props::for-guest tim))))
+        (bring-to (location `((desig-props::on Cupboard)
+                              (desig-props::name "kitchen_island")))))
+    (progn
+      (pick-object obj)
+      (place-object obj bring-to))))
+    
+          
 
 ;; EIGENE FUNKTIONEN ENDE
 
@@ -502,49 +513,62 @@
 
 (def-top-level-cram-function set-table-thomasthesis-with-distance-checking ()
   (set-scene-thomasthesis-experiment-01)
+  (prepare-settings)
   (let ((checked-table nil)
         (objects-on-table nil))
-    (lazy-mapcar (lambda (bdgs)
-                   (destructuring-bind (obj-desig bring-to) bdgs
-                     (if (and
-                          (not checked-table)
-                          ;; sollte so passen, oder?
-                          (equal "kitchen_island" (first (sorted-semantic-object-distances '("kitchen_sink_block" "kitchen_island")))))
-                         (progn
-                           (go-in-front-of-island)
-                           (setq objects-on-table (perceive-table))
-                           (setq checked-table t)))
-                     (let ((obj-on-table (object-in-list obj-desig objects-on-table))
-                           (placed-object nil))
-                       (if obj-on-table
+    (with-process-modules
+      (lazy-mapcar (lambda (bdgs)
+                     (destructuring-bind (obj-desig bring-to) bdgs
+                       (if (and
+                            (not checked-table)
+                            (equal "kitchen_island" (first (first (sorted-semantic-object-distances '("kitchen_sink_block" "kitchen_island"))))))
                            (progn
-                             (equate obj-desig obj-on-table)
-                             (pick-object obj-on-table :ignore-object-not-found t)
-                             (place-object obj-on-table bring-to)
-                             (setq placed-object t))
-                           (let ((retry-counter 0))
-                             (loop while (and
-                                          (not placed-object)
-                                          (< retry-counter 4))
-                                   do (if (< retry-counter 3)
-                                          (let ((object-found (cpl-impl:mapcar-clean #'identity (search-object-at-object-locations obj-desig))))
-                                            (unless object-found
-                                              (equate obj-desig object-found)
-                                              (pick-object object-found :ignore-object-not-found t)
-                                              (place-object object-found bring-to)
-                                              (setq placed-object t)))
-                                          (if (not checked-table)
-                                              (progn
-                                                (go-in-front-of-island)
-                                                (setq objects-on-table (perceive-table))
-                                                (setq checked-table t)
-                                                (setq obj-on-table (object-in-list obj-desig objects-on-table))
-                                                (unless obj-on-table
-                                                  (equate obj-desig obj-on-table)
-                                                  (pick-object obj-on-table :ignore-object-not-found t)
-                                                  (place-object obj-on-table bring-to)
-                                                  (setq placed-object t)))))))))))
-                 (extract-objectdesig-and-bringto))))
+                             (roslisp:ros-info (plan) "progn kitchen_island nearest")
+                             (go-in-front-of-island)
+                             (setq objects-on-table (perceive-table))
+                             (setq checked-table t)))
+                       (let ((obj-on-table (first objects-on-table))
+                             (placed-object nil))
+                             ;(setq obj-on-table (first objects-on-table));(object-in-list obj-desig objects-on-table))
+                         (if obj-on-table
+                             (progn
+                               (roslisp:ros-info (plan) "progn obj-on-table")
+                               (equate obj-desig obj-on-table)
+                               (pick-object obj-on-table :ignore-object-not-found t)
+                               (place-object obj-on-table bring-to)
+                               (setq placed-object t))
+                             (let ((retry-counter 0))
+                               (loop while (and
+                                            (not placed-object)
+                                            (< retry-counter 2))
+                                     do (if (< retry-counter 1)
+                                            (progn
+                                              (roslisp:ros-info (checkksb) "Begin with checking kitchen_sink_block")
+                                              (setq retry-counter (+ retry-counter 1))
+                                              (let* ((result (search-object-at-object-locations obj-desig))
+                                                     (object-found (first (cpl-impl:mapcar-clean #'identity result))))
+                                                (format t "done~%")
+                                                (when object-found
+                                                  (equate obj-desig object-found)
+                                                  (pick-object object-found :ignore-object-not-found t)
+                                                  (place-object object-found bring-to)
+                                                  (setq placed-object t))))
+                                            (if (not checked-table)
+                                                (progn
+                                                  (roslisp:ros-info (checktable) "Begin with checking table")
+                                                  (setq retry-counter (+ retry-counter 1))
+                                                  (go-in-front-of-island)
+                                                  (setq objects-on-table (perceive-table))
+                                                  (setq checked-table t)
+                                                  (setq obj-on-table (first objects-on-table));(object-in-list obj-desig objects-on-table))
+                                                  (format t "OBJECT: ~a~%" obj-on-table)
+                                                  (when obj-on-table
+                                                    (equate obj-desig obj-on-table)
+                                                    (pick-object obj-on-table :ignore-object-not-found t)
+                                                    (place-object obj-on-table bring-to)
+                                                    (setq placed-object t)))
+                                                (setq retry-counter (+ retry-counter 1))))))))))
+                   (extract-objectdesig-and-bringto)))))
         
 
 ;; EIGENE PLÄNE ENDE
@@ -723,7 +747,7 @@
   (<- (preference mary seat 1))
 
   ;; EIGENE PERSONEN ANFANG
-  (<- (perference max seat 1))
+  (<- (preference max seat 1))
   (<- (preference bob seat 3))
   (<- (preference alice seat 4))
   

@@ -116,7 +116,7 @@
             (t `((,symbol ,(car decided-value))))))))
 
 (defun perceive-a (object &key stationary (move-head t) ignore-object-not-found)
-  (cpl-impl:with-retry-counters ((retry-task 3))
+  (cpl-impl:with-retry-counters ((retry-task 0))
     (cpl:with-failure-handling
         ((cram-plan-failures:object-not-found (f)
            (declare (ignore f))
