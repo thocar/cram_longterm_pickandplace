@@ -358,7 +358,7 @@
                  (cl-transforms:orientation pose)))
          (pose3 (tf-types:pose->pose-stamped "map" 0.0 pose2)))
     (look-at-pose pose3))
-  (perceive-all (make-designator 'object nil) :stationary t :move-head nil)
+  (perceive-all (make-designator 'object `((desig-props::type desig-props::pancakemix))) :stationary t :move-head nil)
  )
 
 ;; Gibt ein Objekt aus einer Liste zurück, wenn es sich dabei um das gesuchte Objekt handelt
